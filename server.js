@@ -440,6 +440,8 @@ app.post('/api/submit-upgrade', requireAuth, upload.single('slip'), async (req, 
   if (settings.autoApprove) {
     // อนุมัติทันที: เปลี่ยนแพ็กเกจให้เลย + ส่งเมลรับของชุดใหม่
     user.package      = targetPkg;
+    user.finalPrice   = upgradePrice;   // ยอดที่จ่ายจริง = ส่วนต่างอัพเกรด
+    user.discountCode = null;           // อัพเกรดไม่มีโค้ดส่วนลด
     user.approvedAt   = new Date().toISOString();
     user.upgradeRequest = null;
     user.slip         = req.file.filename;
@@ -487,6 +489,8 @@ app.post('/api/admin/approve-upgrade/:id', requireAdmin, async (req, res) => {
   const user  = users.find(u => u.id === req.params.id);
   if (!user || !user.upgradeRequest) return res.status(404).json({ success: false });
   user.package      = user.upgradeRequest.package;
+  user.finalPrice   = user.upgradeRequest.price;  // ยอดที่จ่ายจริง = ส่วนต่างอัพเกรด
+  user.discountCode = null;                        // อัพเกรดไม่มีโค้ดส่วนลด
   user.approvedAt   = new Date().toISOString();
   user.upgradeRequest = null;
   saveUsers(users);
