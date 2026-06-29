@@ -1082,6 +1082,7 @@ async function renderAdminScreen() {
             ${u.upgradeRequest ? `<button onclick="approveUpgrade('${escAttr(u.id)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:none; border-radius:9px; background:#7C3AED; color:#fff; cursor:pointer;">⬆️ อนุมัติ Upgrade</button>` : ''}
             <button onclick="approveUser('${escAttr(u.id)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:none; border-radius:9px; background:#0FB5C5; color:#fff; cursor:pointer;">อนุมัติ + ส่งเมล</button>
             <button onclick="revokeUser('${escAttr(u.id)}')"  style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:1px solid #E0C0B0; border-radius:9px; background:#fff; color:#C2410C; cursor:pointer;">ยกเลิก</button>
+            <button onclick="resetUser('${escAttr(u.id)}','${escAttr(u.name)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:1px solid #fbbf24; border-radius:9px; background:#fffbeb; color:#b45309; cursor:pointer;">รีเซต</button>
             <button onclick="deleteUser('${escAttr(u.id)}','${escAttr(u.name)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:1px solid #fca5a5; border-radius:9px; background:#fff7f7; color:#dc2626; cursor:pointer;">ลบ</button>
           </div></div>`;
       }).join('');
@@ -1108,6 +1109,11 @@ async function revokeUser(id) {
 }
 async function approveUpgrade(id) {
   await api('POST', `/api/admin/approve-upgrade/${id}`);
+  renderAdminScreen();
+}
+async function resetUser(id, name) {
+  if (!confirm(`รีเซต "${name}" กลับเป็นยังไม่ชำระ?\nลูกค้าจะต้องอัพสลิปใหม่`)) return;
+  await api('POST', `/api/admin/reset-user/${id}`);
   renderAdminScreen();
 }
 async function deleteUser(id, name) {

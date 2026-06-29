@@ -459,6 +459,20 @@ app.delete('/api/admin/user/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/api/admin/reset-user/:id', requireAdmin, (req, res) => {
+  const users = readUsers();
+  const user  = users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ success: false });
+  user.status       = 'unpaid';
+  user.slip         = null;
+  user.approvedAt   = null;
+  user.discountCode = null;
+  user.finalPrice   = null;
+  user.upgradeRequest = null;
+  saveUsers(users);
+  res.json({ success: true });
+});
+
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
   res.json({ success: true, settings: readSettings() });
 });
