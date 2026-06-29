@@ -399,6 +399,19 @@ app.post('/api/submit-upgrade', requireAuth, upload.single('slip'), async (req, 
   const upgradePrice = UPGRADE_PRICES[upgradeKey];
   if (!upgradePrice) return res.status(400).json({ success: false, message: 'ไม่สามารถอัปเกรดได้' });
 
+  const settings = readSettings();
+  if (settings.autoApprove) {
+    // อนุมัติทันที: เปลี่ยนแพ็กเกจให้เลย + ส่งเมลรับของชุดใหม่
+    user.package      = targetPkg;
+    user.approvedAt   = new Date().toISOString();
+    user.upgradeRequest = null;
+    user.slip         = req.file.filename;
+    saveUsers(users);
+    res.json({ success: true, autoApproved: true, user: sanitize(user) });
+    sendApproveEmail(user).catch(e => console.error('Upgrade email error:', e.message));
+    return;
+  }
+
   user.upgradeRequest = {
     package: targetPkg,
     slip: req.file.filename,

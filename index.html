@@ -973,7 +973,17 @@ async function submitUpgrade() {
     const data = await api('POST', '/api/submit-upgrade', form);
     if (!data.success) { const el=document.getElementById('upgrade-error'); el.textContent=data.message||'เกิดข้อผิดพลาด'; el.style.display=''; return; }
     document.getElementById('upgrade-form').style.display = 'none';
-    document.getElementById('upgrade-success').style.display = '';
+    const successEl = document.getElementById('upgrade-success');
+    if (data.autoApproved) {
+      if (data.user) currentUserDoc = data.user;
+      successEl.innerHTML = '✅ อัปเกรดสำเร็จ! ระบบส่งของชุดใหม่ทาง Email แล้ว เริ่มใช้งานได้ทันที';
+      // ซ่อนตัวเลือกอัปเกรดที่ใช้ไปแล้ว / รีเฟรชหน้า
+      renderUpgradeSection();
+      updateNav();
+    } else {
+      successEl.innerHTML = '✅ ส่งสลิปเรียบร้อย! แอดมินจะยืนยันและอัปเกรดให้ภายในไม่นาน';
+    }
+    successEl.style.display = '';
   } catch(e) {
     const el = document.getElementById('upgrade-error'); el.textContent='ไม่สามารถเชื่อมต่อได้'; el.style.display='';
   }
