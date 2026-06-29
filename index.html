@@ -454,9 +454,6 @@ a { text-decoration: none; }
           <button onclick="closeLesson()" style="font-family:'Sarabun'; font-weight:600; font-size:13px; padding:6px 12px; border:none; border-radius:9px; background:rgba(255,255,255,0.15); color:#fff; cursor:pointer;">✕ ปิด</button>
         </div>
         <div id="player-body"></div>
-        <div style="text-align:center; padding:12px 0 4px;">
-          <a id="player-drive-link" href="https://drive.google.com" target="_blank" style="display:inline-flex; align-items:center; gap:8px; font-family:'Kanit'; font-weight:600; font-size:14px; color:#0FB5C5;">📂 เปิดดูบน Google Drive</a>
-        </div>
       </div>
 
       <div id="lessons-list" style="display:flex; flex-direction:column; gap:12px;"></div>
@@ -1103,13 +1100,11 @@ function openLesson(id) {
     body.innerHTML = `<div style="position:relative; width:100%; padding-top:56.25%; border-radius:12px; overflow:hidden; background:#000;">
       <iframe src="https://drive.google.com/file/d/${driveId}/preview" allow="autoplay; encrypted-media" allowfullscreen
         style="position:absolute; inset:0; width:100%; height:100%; border:0;"></iframe></div>`;
-    document.getElementById('player-drive-link').href = `https://drive.google.com/file/d/${driveId}/view`;
   } else {
     body.innerHTML = `<div style="border-radius:12px; background:repeating-linear-gradient(45deg,#13343b,#13343b 12px,#163b43 12px,#163b43 24px); padding:48px 24px; text-align:center;">
       <div style="font-size:34px; margin-bottom:10px;">🎬</div>
       <div style="font-family:'Kanit'; font-weight:700; color:#fff; font-size:16px; margin-bottom:6px;">ยังไม่ได้วางลิงก์วิดีโอบทเรียนนี้</div>
       <div style="font-family:monospace; font-size:13px; color:#7FB3BB;">แอดมินใส่ Google Drive File ID ที่หน้าแอดมินเพื่อแสดงวิดีโอ</div></div>`;
-    document.getElementById('player-drive-link').href = 'https://drive.google.com';
   }
   const player = document.getElementById('lesson-player');
   player.style.display = '';
