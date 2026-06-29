@@ -320,6 +320,9 @@ a { text-decoration: none; }
           </div>
           <div>
             <div style="background:#fff; border:1px solid #E2F1F3; border-radius:20px; padding:26px; margin-bottom:18px;">
+              <!-- เลือกแพ็กเกจ -->
+              <div style="font-size:13px; color:#8AA1A4; margin-bottom:10px;">เลือกแพ็กเกจ</div>
+              <div id="pay-pkg-radios" style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;"></div>
               <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px;">
                 <span style="font-family:'Kanit'; font-weight:600; color:#5E787C;">ยอดที่ต้องชำระ</span>
                 <span id="pay-top-amount" style="font-family:'Kanit'; font-weight:900; font-size:34px; color:#0E2A30;">฿999</span>
@@ -801,6 +804,44 @@ async function submitAuth() {
 }
 
 // ─── Payment ──────────────────────────────────────────────
+const PAY_PKG_LIST = [
+  { key:'course', label:'คอร์สวิดีโอ 9 บทเรียน',       price:999  },
+  { key:'ebook',  label:'E-Book คู่มือ PDF',            price:350  },
+  { key:'combo',  label:'คอร์ส + E-Book (ขายดีที่สุด)', price:1199 },
+];
+function renderPayPkgRadios() {
+  const wrap = document.getElementById('pay-pkg-radios');
+  if (!wrap) return;
+  wrap.innerHTML = PAY_PKG_LIST.map(p => {
+    const on = state.selectedPackage === p.key;
+    return `<label onclick="selectPayPkg('${p.key}')" style="display:flex; align-items:center; gap:10px; cursor:pointer; border:2px solid ${on?'#0FB5C5':'#E2F1F3'}; background:${on?'#F2FBFC':'#fff'}; border-radius:12px; padding:11px 14px;">
+      <span style="flex-shrink:0; width:18px; height:18px; border-radius:50%; border:2px solid ${on?'#0FB5C5':'#C3D6D8'}; display:flex; align-items:center; justify-content:center;">${on?'<span style="width:9px;height:9px;border-radius:50%;background:#0FB5C5;"></span>':''}</span>
+      <span style="flex:1; font-family:'Kanit'; font-weight:600; font-size:14px; color:#0E2A30;">${p.label}</span>
+      <span style="font-family:'Kanit'; font-weight:800; font-size:15px; color:${on?'#0A8D9B':'#7A9498'};">฿${p.price.toLocaleString()}</span>
+    </label>`;
+  }).join('');
+}
+function selectPayPkg(key) {
+  if (!PACKAGE_PRICES[key]) return;
+  state.selectedPackage = key;
+  // เปลี่ยนโปรแล้วต้องเช็คโค้ดส่วนลดใหม่
+  state.discountCode = null; state.discountAmount = 0;
+  const di = document.getElementById('discount-input');
+  const dr = document.getElementById('discount-result');
+  if (di) di.value = '';
+  if (dr) dr.style.display = 'none';
+  renderPayPkgRadios();
+  updatePriceDisplay();
+  const headEl = document.getElementById('pay-headline');
+  const subEl  = document.getElementById('pay-subline');
+  if (headEl) {
+    const pkgName = { course:'คอร์สวิดีโอ', ebook:'E-Book', combo:'คอร์ส + E-Book' }[key] || 'คอร์ส';
+    headEl.textContent = `ชำระเงิน ฿${(PACKAGE_PRICES[key]||999).toLocaleString()} — ${pkgName}`;
+    if (subEl) subEl.textContent = key === 'ebook'
+      ? 'สแกน QR หรือโอนเข้าบัญชี แล้วกดยืนยัน — รับ E-Book ทาง Email'
+      : 'สแกน QR หรือโอนเข้าบัญชี แล้วกดยืนยันการชำระเงินด้านล่าง';
+  }
+}
 function updatePriceDisplay() {
   const base  = PACKAGE_PRICES[state.selectedPackage] || 999;
   const final = Math.max(0, base - state.discountAmount);
@@ -838,6 +879,7 @@ function renderPaymentScreen() {
   const dr = document.getElementById('discount-result');
   if (di) di.value = '';
   if (dr) dr.style.display = 'none';
+  renderPayPkgRadios();
   updatePriceDisplay();
   // หัวข้อหน้าชำระเงิน เปลี่ยนตามแพ็กเกจที่เลือก
   const headEl = document.getElementById('pay-headline');
