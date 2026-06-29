@@ -25,9 +25,10 @@ body { font-family: 'Sarabun', sans-serif; color: #0E2A30; background: #F2FBFC; 
 button { font-family: inherit; }
 input  { font-family: inherit; color: inherit; }
 a { text-decoration: none; }
-#auto-approve-toggle:checked + span { background: #0FB5C5; }
-#auto-approve-toggle + span::before { content:''; position:absolute; height:20px; width:20px; left:4px; bottom:4px; background:#fff; border-radius:50%; transition:.3s; }
-#auto-approve-toggle:checked + span::before { transform: translateX(24px); }
+.toggle-track { position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:28px; transition:.3s; }
+.toggle-track::before { content:''; position:absolute; height:20px; width:20px; left:4px; bottom:4px; background:#fff; border-radius:50%; transition:.3s; }
+#auto-approve-toggle:checked ~ .toggle-track { background:#0FB5C5; }
+#auto-approve-toggle:checked ~ .toggle-track::before { transform: translateX(24px); }
 </style>
 </head>
 <body>
@@ -451,9 +452,8 @@ a { text-decoration: none; }
           <div style="font-size:13px; color:#7A9498; margin-top:2px;">เปิด = อนุมัติอัตโนมัติเมื่ออัพสลิป &nbsp;|&nbsp; ปิด = ส่งเมลแจ้งแอดมินรอ approve</div>
         </div>
         <label style="position:relative; display:inline-block; width:52px; height:28px; flex-shrink:0;">
-          <input type="checkbox" id="auto-approve-toggle" style="opacity:0; width:0; height:0;">
-          <span onclick="document.getElementById('auto-approve-toggle').click()" style="position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:28px; transition:.3s;"
-            id="auto-approve-slider"></span>
+          <input type="checkbox" id="auto-approve-toggle" style="opacity:0; width:0; height:0; position:absolute;">
+          <span class="toggle-track"></span>
         </label>
       </div>
 
