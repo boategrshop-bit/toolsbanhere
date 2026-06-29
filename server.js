@@ -511,5 +511,16 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.listen(PORT, () => {
   console.log(`\n🚀 Flow Tools Course: ${BASE_URL}`);
-  console.log(`👤 เข้าระบบด้วย ADMIN_EMAIL (${process.env.ADMIN_EMAIL || 'ยังไม่ได้ตั้งค่า'})\n`);
+  console.log(`👤 เข้าระบบด้วย ADMIN_EMAIL (${process.env.ADMIN_EMAIL || 'ยังไม่ได้ตั้งค่า'})`);
+  // ตรวจสอบการตั้งค่า SMTP ตอนเริ่มระบบ
+  console.log(`📧 SMTP_USER: ${process.env.SMTP_USER ? 'OK ('+process.env.SMTP_USER+')' : '❌ ยังไม่ได้ตั้งค่า'}`);
+  console.log(`📧 SMTP_PASS: ${process.env.SMTP_PASS ? 'OK ('+process.env.SMTP_PASS.length+' chars)' : '❌ ยังไม่ได้ตั้งค่า'}`);
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    mailer.verify((err) => {
+      if (err) console.error('❌ SMTP verify FAILED:', err.message);
+      else console.log('✅ SMTP พร้อมส่งเมลแล้ว\n');
+    });
+  } else {
+    console.error('⚠️  อีเมลจะไม่ถูกส่ง เพราะ SMTP_USER/SMTP_PASS ไม่ครบ — ตั้งค่าใน Railway Variables\n');
+  }
 });
