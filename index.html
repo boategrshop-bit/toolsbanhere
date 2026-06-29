@@ -580,6 +580,7 @@ async function initSession() {
     currentUserDoc = data.loggedIn ? data.user : null;
   } catch(e) { currentUserDoc = null; }
   updateNav();
+  if (currentUserDoc) routeAfterAuth();
 }
 
 // ─── Countdown (ใช้ localStorage ได้ ไม่มีผลต่อ security) ─
@@ -608,8 +609,10 @@ function tickCountdown() {
 
 // ─── Routing ─────────────────────────────────────────────
 function showScreen(id) {
+  const target = document.getElementById('screen-' + id);
+  if (!target) { console.error('showScreen: no element #screen-' + id); return; }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
+  target.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
   state.route = id;
 }
@@ -985,7 +988,9 @@ async function renderLessonsScreen() {
   document.getElementById('lesson-welcome').textContent = u ? `ยินดีต้อนรับ, ${u.name} 👋` : '';
   const upgradeBtn = document.getElementById('btn-upgrade-lessons');
   if (upgradeBtn) upgradeBtn.style.display = (u && (UPGRADE_OPTIONS[u.package]||[]).length) ? '' : 'none';
-  document.getElementById('lessons-list').innerHTML = LESSON_DEFS.map(l => `
+  const listEl = document.getElementById('lessons-list');
+  if (!listEl) return;
+  listEl.innerHTML = LESSON_DEFS.map(l => `
     <div onclick="openLesson(${l.id})" style="display:flex; align-items:center; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:15px; padding:18px 20px; cursor:pointer;">
       <div style="flex-shrink:0; width:46px; height:46px; border-radius:12px; background:#0FB5C5; color:#fff; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">${l.id}</div>
       <div style="flex:1; min-width:0;">
