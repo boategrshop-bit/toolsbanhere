@@ -433,7 +433,10 @@ a { text-decoration: none; }
           <div id="lesson-welcome" style="font-family:'Kanit'; font-weight:700; color:#0FB5C5; font-size:14px;"></div>
           <h2 style="font-family:'Kanit'; font-weight:800; font-size:30px; margin:4px 0 0;">บทเรียนทั้งหมด</h2>
         </div>
-        <div style="background:#E6F8FA; color:#0A8D9B; font-family:'Kanit'; font-weight:700; font-size:13px; padding:8px 14px; border-radius:999px;">✓ เข้าถึงได้ตลอดชีพ</div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div style="background:#E6F8FA; color:#0A8D9B; font-family:'Kanit'; font-weight:700; font-size:13px; padding:8px 14px; border-radius:999px;">✓ เข้าถึงได้ตลอดชีพ</div>
+          <button id="btn-upgrade-lessons" onclick="goUpgradeFromLessons()" style="display:none; font-family:'Kanit'; font-weight:700; font-size:13px; padding:8px 16px; border:none; border-radius:999px; background:#7C3AED; color:#fff; cursor:pointer;">⬆️ ซื้อเพิ่ม</button>
+        </div>
       </div>
 
       <!-- video player -->
@@ -940,6 +943,13 @@ function showUpgradeForm(targetPkg) {
   document.getElementById('upgrade-error').style.display = 'none';
   document.getElementById('upgrade-form').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
+function goUpgradeFromLessons() {
+  renderPaymentScreen(); showScreen('payment'); updateNav();
+  setTimeout(() => {
+    const sec = document.getElementById('upgrade-section');
+    if (sec) sec.scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 100);
+}
 function cancelUpgrade() {
   _upgradeTarget = null; _upgradeSlipFile = null;
   document.getElementById('upgrade-form').style.display = 'none';
@@ -973,6 +983,8 @@ async function renderLessonsScreen() {
   } catch(e) { cachedLessonIds = {}; }
   const u = currentUserDoc;
   document.getElementById('lesson-welcome').textContent = u ? `ยินดีต้อนรับ, ${u.name} 👋` : '';
+  const upgradeBtn = document.getElementById('btn-upgrade-lessons');
+  if (upgradeBtn) upgradeBtn.style.display = (u && (UPGRADE_OPTIONS[u.package]||[]).length) ? '' : 'none';
   document.getElementById('lessons-list').innerHTML = LESSON_DEFS.map(l => `
     <div onclick="openLesson(${l.id})" style="display:flex; align-items:center; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:15px; padding:18px 20px; cursor:pointer;">
       <div style="flex-shrink:0; width:46px; height:46px; border-radius:12px; background:#0FB5C5; color:#fff; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">${l.id}</div>
