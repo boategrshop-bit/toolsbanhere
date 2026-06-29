@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800;900&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; color: #0E2A30; background: #F2FBFC; -webkit-font-smoothing: antialiased; }
+  @keyframes gfcPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  @keyframes gfcFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes gfcShine { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  ::selection { background: #FF7A1A; color: #fff; }
+</style>
+</helmet>
+
+<div style="min-height:100vh; display:flex; flex-direction:column;">
+
+  <!-- ===== TOP BAR ===== -->
+  <header style="position:sticky; top:0; z-index:50; background:rgba(255,255,255,0.92); backdrop-filter:blur(10px); border-bottom:1px solid #DCEFF1;">
+    <div style="max-width:1120px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <div onClick="{{ goLanding }}" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <div style="width:38px; height:38px; border-radius:11px; background:#0FB5C5; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(15,181,197,0.35);">
+          <span style="font-family:'Kanit'; font-weight:800; color:#fff; font-size:20px;">F</span>
+        </div>
+        <div style="line-height:1;">
+          <div style="font-family:'Kanit'; font-weight:800; font-size:17px; color:#0E2A30;">FLOW TOOLS</div>
+          <div style="font-size:11px; color:#0A8D9B; font-weight:600; letter-spacing:0.5px;">สร้างเครื่องมือ AI ด้วยตัวเอง</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <sc-if value="{{ isLoggedIn }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ goLessonsFn }}" style="font-family:'Kanit'; font-weight:600; font-size:14px; padding:9px 16px; border:none; border-radius:10px; background:#0FB5C5; color:#fff; cursor:pointer;">เข้าเรียน</button>
+        </sc-if>
+        <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ goAdminFn }}" style="font-family:'Kanit'; font-weight:600; font-size:14px; padding:9px 14px; border:1px solid #D6E9EB; border-radius:10px; background:#fff; color:#0A8D9B; cursor:pointer;">แอดมิน</button>
+        </sc-if>
+        <sc-if value="{{ isLoggedIn }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ logout }}" style="font-family:'Sarabun'; font-weight:600; font-size:13px; padding:9px 12px; border:none; border-radius:10px; background:transparent; color:#6B8488; cursor:pointer;">ออกจากระบบ</button>
+        </sc-if>
+        <sc-if value="{{ isLoggedOut }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ goAuthFn }}" style="font-family:'Kanit'; font-weight:600; font-size:14px; padding:9px 16px; border:none; border-radius:10px; background:#FF7A1A; color:#fff; cursor:pointer; box-shadow:0 4px 12px rgba(255,122,26,0.35);">เข้าสู่ระบบ / สมัคร</button>
+        </sc-if>
+      </div>
+    </div>
+  </header>
+
+  <main style="flex:1;">
+
+  <!-- ================= LANDING ================= -->
+  <sc-if value="{{ showLanding }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <!-- HERO -->
+    <section style="background:#0E2A30; color:#fff; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:-120px; right:-80px; width:380px; height:380px; border-radius:50%; background:radial-gradient(circle, rgba(15,181,197,0.35), transparent 70%);"></div>
+      <div style="position:absolute; bottom:-140px; left:-100px; width:360px; height:360px; border-radius:50%; background:radial-gradient(circle, rgba(255,122,26,0.22), transparent 70%);"></div>
+      <div style="max-width:1120px; margin:0 auto; padding:54px 20px 64px; position:relative; display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center;">
+        <div>
+          <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,122,26,0.16); border:1px solid rgba(255,122,26,0.5); color:#FFB57A; font-family:'Kanit'; font-weight:600; font-size:13px; padding:7px 14px; border-radius:999px; margin-bottom:20px;">
+            🔥 คอร์สสร้าง Tools ใน Google Flow
+          </div>
+          <h1 style="font-family:'Kanit'; font-weight:900; font-size:clamp(30px,4.4vw,52px); line-height:1.08; margin:0 0 18px;">
+            ซื้อ Tools มาหลายพัน<br>แต่ใช้ไม่ตอบโจทย์?<br><span style="color:#FF7A1A;">ทำเองเลย จบที่สุด</span>
+          </h1>
+          <p style="font-family:'Sarabun'; font-size:18px; line-height:1.6; color:#C7DBDE; margin:0 0 26px; max-width:520px;">
+            สอนสร้างเครื่องมือ AI ด้วยตัวเองตั้งแต่ศูนย์ — ทำหนังสั้น คลิปปักตะกร้า คลิปขายของ เล่าเรื่อง บอร์ดแคส ละครสั้น ละครจีน ละครคุณธรรม <b style="color:#fff;">สร้าง แก้ไข อัพเดท และขายต่อยอดได้เป็นแสน</b>
+          </p>
+          <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:28px;">
+            <button onClick="{{ goAuthFn }}" style="font-family:'Kanit'; font-weight:800; font-size:19px; padding:16px 32px; border:none; border-radius:14px; background:#FF7A1A; color:#fff; cursor:pointer; box-shadow:0 10px 30px rgba(255,122,26,0.45); animation:gfcPulse 2.2s ease-in-out infinite;">
+              สมัครเรียนเลย ฿999
+            </button>
+            <div style="line-height:1.2;">
+              <div style="font-family:'Sarabun'; font-size:14px; color:#8FB0B4; text-decoration:line-through;">ปกติ ฿2,990</div>
+              <div style="font-family:'Kanit'; font-weight:700; font-size:15px; color:#0FB5C5;">ประหยัด 67% วันนี้</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:26px; flex-wrap:wrap;">
+            <div><div style="font-family:'Kanit'; font-weight:800; font-size:26px; color:#fff;">219+</div><div style="font-size:13px; color:#9CBABE;">ผู้เรียนแล้ว</div></div>
+            <div><div style="font-family:'Kanit'; font-weight:800; font-size:26px; color:#fff;">฿102,181</div><div style="font-size:13px; color:#9CBABE;">ยอดขายเครื่องมือ</div></div>
+            <div><div style="font-family:'Kanit'; font-weight:800; font-size:26px; color:#fff;">⭐ 4.9</div><div style="font-size:13px; color:#9CBABE;">คะแนนรีวิว</div></div>
+          </div>
+        </div>
+        <div style="position:relative;">
+          <div style="background:#fff; border-radius:20px; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.4); animation:gfcFloat 4s ease-in-out infinite;">
+            <img src="assets/storypro-sales.jpg" alt="ยอดขาย StoryPro" style="width:100%; display:block; border-radius:12px; max-height:420px; object-fit:cover; object-position:top;">
+          </div>
+          <div style="position:absolute; bottom:-24px; left:50%; transform:translateX(-50%); background:#0FB5C5; color:#fff; font-family:'Kanit'; font-weight:800; font-size:21px; padding:14px 28px; border-radius:999px; box-shadow:0 10px 26px rgba(15,181,197,0.55); white-space:nowrap;">
+            ครึ่งเดือน ทะลุ 1 แสน 🚀
+          </div>
+          <div style="position:absolute; top:-30px; left:50%; transform:translateX(-50%); width:310px; max-width:88%; background:#fff; border:2px solid #FF7A1A; border-radius:16px; padding:14px 16px; box-shadow:0 14px 34px rgba(0,0,0,0.35); z-index:6; animation:gfcFloat 3.6s ease-in-out infinite;">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="font-size:22px; line-height:1;">💸</span>
+              <div style="font-family:'Sarabun'; font-size:14px; line-height:1.5; color:#0E2A30;"><b style="font-family:'Kanit'; font-weight:800; color:#F25C05;">Tools ดีจริง!</b> สร้างรายได้แบบออแกนิก ขายได้โดยไม่ต้องเสียเงินยิงแอด ไม่มีต้นทุน</div>
+            </div>
+            <div style="position:absolute; bottom:-9px; left:50%; transform:translateX(-50%) rotate(45deg); width:16px; height:16px; background:#fff; border-right:2px solid #FF7A1A; border-bottom:2px solid #FF7A1A;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- URGENCY BAR -->
+    <section style="background:#FF7A1A; color:#fff;">
+      <div style="max-width:1120px; margin:0 auto; padding:16px 20px; display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap;">
+        <div style="font-family:'Kanit'; font-weight:700; font-size:16px;">⏰ ราคาพิเศษ ฿999 หมดเขตใน</div>
+        <div style="display:flex; gap:8px;">
+          <div style="background:rgba(0,0,0,0.22); border-radius:9px; padding:6px 12px; text-align:center; min-width:54px;"><div style="font-family:'Kanit'; font-weight:800; font-size:22px;">{{ cdDays }}</div><div style="font-size:10px; opacity:0.85;">วัน</div></div>
+          <div style="background:rgba(0,0,0,0.22); border-radius:9px; padding:6px 12px; text-align:center; min-width:54px;"><div style="font-family:'Kanit'; font-weight:800; font-size:22px;">{{ cdHours }}</div><div style="font-size:10px; opacity:0.85;">ชม.</div></div>
+          <div style="background:rgba(0,0,0,0.22); border-radius:9px; padding:6px 12px; text-align:center; min-width:54px;"><div style="font-family:'Kanit'; font-weight:800; font-size:22px;">{{ cdMins }}</div><div style="font-size:10px; opacity:0.85;">นาที</div></div>
+          <div style="background:rgba(0,0,0,0.22); border-radius:9px; padding:6px 12px; text-align:center; min-width:54px;"><div style="font-family:'Kanit'; font-weight:800; font-size:22px;">{{ cdSecs }}</div><div style="font-size:10px; opacity:0.85;">วินาที</div></div>
+        </div>
+        <div style="font-family:'Sarabun'; font-weight:700; font-size:14px; background:#0E2A30; padding:6px 14px; border-radius:999px;">เหลือ 7 ที่สุดท้าย</div>
+      </div>
+    </section>
+
+    <!-- PAIN / PROMISE -->
+    <section style="max-width:1120px; margin:0 auto; padding:64px 20px 30px;">
+      <div style="text-align:center; max-width:760px; margin:0 auto 44px;">
+        <div style="font-family:'Kanit'; font-weight:700; color:#0FB5C5; font-size:15px; letter-spacing:1px; margin-bottom:10px;">ทำไมต้องสร้างเอง?</div>
+        <h2 style="font-family:'Kanit'; font-weight:800; font-size:clamp(26px,3.4vw,40px); margin:0 0 16px; line-height:1.15;">เลิกจ่ายค่า Tools รายเดือนที่ใช้ไม่คุ้ม</h2>
+        <p style="font-size:17px; color:#4A6468; line-height:1.6; margin:0;">เครื่องมือสำเร็จรูปแพง ปรับแต่งไม่ได้ ฟีเจอร์ไม่ตรงงาน เมื่อสร้างเองเป็น คุณคุมทุกอย่าง — และขายต่อให้คนอื่นได้ด้วย</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px;">
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:26px;">
+          <div style="font-size:30px; margin-bottom:12px;">💸</div>
+          <h3 style="font-family:'Kanit'; font-weight:700; font-size:19px; margin:0 0 8px;">หยุดเสียเงินเปล่า</h3>
+          <p style="font-size:15px; color:#547074; line-height:1.55; margin:0;">ไม่ต้องซื้อ Tools หลายพันที่ใช้ครั้งสองครั้งแล้วทิ้ง สร้างของตัวเองครั้งเดียวใช้ได้ตลอด</p>
+        </div>
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:26px;">
+          <div style="font-size:30px; margin-bottom:12px;">🛠️</div>
+          <h3 style="font-family:'Kanit'; font-weight:700; font-size:19px; margin:0 0 8px;">ปรับได้ดั่งใจ</h3>
+          <p style="font-size:15px; color:#547074; line-height:1.55; margin:0;">อยากได้ฟีเจอร์ไหนเพิ่มก็ทำเอง อัพเดทเองได้ ไม่ต้องรอใคร ไม่ติดเงื่อนไขเจ้าของ Tools</p>
+        </div>
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:26px;">
+          <div style="font-size:30px; margin-bottom:12px;">📈</div>
+          <h3 style="font-family:'Kanit'; font-weight:700; font-size:19px; margin:0 0 8px;">ต่อยอดเป็นแสน</h3>
+          <p style="font-size:15px; color:#547074; line-height:1.55; margin:0;">สร้างเสร็จขายเป็นเครื่องมือของตัวเองได้เลย เหมือน StoryPro ที่ทำยอดครึ่งเดือนทะลุแสน</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CURRICULUM -->
+    <section style="max-width:1120px; margin:0 auto; padding:44px 20px;">
+      <div style="text-align:center; margin-bottom:36px;">
+        <div style="font-family:'Kanit'; font-weight:700; color:#FF7A1A; font-size:15px; letter-spacing:1px; margin-bottom:10px;">ในคอร์สมีอะไรบ้าง</div>
+        <h2 style="font-family:'Kanit'; font-weight:800; font-size:clamp(26px,3.4vw,40px); margin:0; line-height:1.15;">7 บทเรียน สร้าง Tools ครบทุกแนว</h2>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+        <div style="display:flex; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:16px; padding:20px;"><div style="flex-shrink:0; width:42px; height:42px; border-radius:12px; background:#E6F8FA; color:#0A8D9B; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">1</div><div><h3 style="font-family:'Kanit'; font-weight:700; font-size:20px; margin:0; color:#9CB3B6; letter-spacing:2px;">. . .</h3></div></div>
+        <div style="display:flex; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:16px; padding:20px;"><div style="flex-shrink:0; width:42px; height:42px; border-radius:12px; background:#E6F8FA; color:#0A8D9B; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">2</div><div><h3 style="font-family:'Kanit'; font-weight:700; font-size:20px; margin:0; color:#9CB3B6; letter-spacing:2px;">. . .</h3></div></div>
+        <div style="display:flex; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:16px; padding:20px;"><div style="flex-shrink:0; width:42px; height:42px; border-radius:12px; background:#E6F8FA; color:#0A8D9B; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">3</div><div><h3 style="font-family:'Kanit'; font-weight:700; font-size:20px; margin:0; color:#9CB3B6; letter-spacing:2px;">. . .</h3></div></div>
+        <div style="display:flex; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:16px; padding:20px;"><div style="flex-shrink:0; width:42px; height:42px; border-radius:12px; background:#E6F8FA; color:#0A8D9B; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">4</div><div><h3 style="font-family:'Kanit'; font-weight:700; font-size:20px; margin:0; color:#9CB3B6; letter-spacing:2px;">. . .</h3></div></div>
+        <div style="display:flex; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:16px; padding:20px;"><div style="flex-shrink:0; width:42px; height:42px; border-radius:12px; background:#E6F8FA; color:#0A8D9B; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">5</div><div><h3 style="font-family:'Kanit'; font-weight:700; font-size:20px; margin:0; color:#9CB3B6; letter-spacing:2px;">. . .</h3></div></div>
+        <div style="display:flex; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:16px; padding:20px;"><div style="flex-shrink:0; width:42px; height:42px; border-radius:12px; background:#FFF0E5; color:#F25C05; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">6</div><div><h3 style="font-family:'Kanit'; font-weight:700; font-size:20px; margin:0; color:#9CB3B6; letter-spacing:2px;">. . .</h3></div></div>
+      </div>
+    </section>
+
+    <!-- SALES PROOF -->
+    <section style="background:#0E2A30; color:#fff; margin-top:30px;">
+      <div style="max-width:1120px; margin:0 auto; padding:60px 20px; display:grid; grid-template-columns:0.9fr 1.1fr; gap:44px; align-items:center;">
+        <div style="background:#fff; border-radius:18px; padding:8px; box-shadow:0 20px 50px rgba(0,0,0,0.4);">
+          <img src="assets/storypro-sales.jpg" alt="ยอดขาย StoryPro" style="width:100%; display:block; border-radius:12px;">
+        </div>
+        <div>
+          <div style="font-family:'Kanit'; font-weight:700; color:#0FB5C5; font-size:15px; letter-spacing:1px; margin-bottom:12px;">ของจริง ไม่ได้พูดลอยๆ</div>
+          <h2 style="font-family:'Kanit'; font-weight:800; font-size:clamp(26px,3.4vw,40px); margin:0 0 18px; line-height:1.12;">StoryPro เครื่องมือของผู้สอน<br>ครึ่งเดือนทำยอด <span style="color:#FF7A1A;">฿102,181</span></h2>
+          <p style="font-size:17px; color:#C7DBDE; line-height:1.6; margin:0 0 24px;">219 ออเดอร์ Approve แล้วทั้งหมด — นี่คือสิ่งที่คุณจะทำได้เมื่อสร้างเครื่องมือเป็นของตัวเอง ไม่ใช่แค่ใช้ แต่<b style="color:#fff;">เป็นเจ้าของและขายมันได้</b></p>
+          <div style="display:flex; gap:14px; flex-wrap:wrap;">
+            <div style="background:rgba(15,181,197,0.15); border:1px solid rgba(15,181,197,0.4); border-radius:12px; padding:14px 18px;"><div style="font-family:'Kanit'; font-weight:800; font-size:24px;">219</div><div style="font-size:13px; color:#9CBABE;">ออเดอร์ Approve</div></div>
+            <div style="background:rgba(255,122,26,0.15); border:1px solid rgba(255,122,26,0.4); border-radius:12px; padding:14px 18px;"><div style="font-family:'Kanit'; font-weight:800; font-size:24px;">฿14,272</div><div style="font-size:13px; color:#9CBABE;">วันที่ดีที่สุด</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section style="max-width:1120px; margin:0 auto; padding:64px 20px 40px;">
+      <div style="text-align:center; margin-bottom:38px;">
+        <div style="font-family:'Kanit'; font-weight:700; color:#FF7A1A; font-size:15px; letter-spacing:1px; margin-bottom:10px;">รีวิวจากผู้เรียนจริง</div>
+        <h2 style="font-family:'Kanit'; font-weight:800; font-size:clamp(26px,3.4vw,40px); margin:0; line-height:1.15;">คนที่เรียนแล้ว ทำเงินได้จริง</h2>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px;">
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:24px;"><div style="color:#FF7A1A; font-size:15px; margin-bottom:10px;">★★★★★</div><p style="font-size:15px; color:#33484C; line-height:1.6; margin:0 0 18px;">“เคยซื้อ Tools มาเป็นหมื่น ใช้ไม่กี่ครั้ง พอมาเรียนคอร์สนี้ทำเองได้ ตอนนี้รับทำคลิปขายของให้ร้านค้า มีรายได้เสริมแล้วค่ะ”</p><div style="display:flex; align-items:center; gap:12px;"><div style="width:42px; height:42px; border-radius:50%; background:#0FB5C5; color:#fff; font-family:'Kanit'; font-weight:700; display:flex; align-items:center; justify-content:center;">ก</div><div><div style="font-family:'Kanit'; font-weight:700; font-size:15px;">กมลชนก ป.</div><div style="font-size:13px; color:#7A9498;">แม่ค้าออนไลน์</div></div></div></div>
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:24px;"><div style="color:#FF7A1A; font-size:15px; margin-bottom:10px;">★★★★★</div><p style="font-size:15px; color:#33484C; line-height:1.6; margin:0 0 18px;">“สอนละเอียดมากครับ ไม่เคยเขียนโค้ดมาก่อนก็ทำตามได้ ตอนนี้สร้าง Tool ทำคลิปเล่าเรื่องขายในเพจ มีคนสั่งซื้อเครื่องมือต่อด้วย”</p><div style="display:flex; align-items:center; gap:12px;"><div style="width:42px; height:42px; border-radius:50%; background:#FF7A1A; color:#fff; font-family:'Kanit'; font-weight:700; display:flex; align-items:center; justify-content:center;">ธ</div><div><div style="font-family:'Kanit'; font-weight:700; font-size:15px;">ธนกฤต ว.</div><div style="font-size:13px; color:#7A9498;">ฟรีแลนซ์</div></div></div></div>
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:24px;"><div style="color:#FF7A1A; font-size:15px; margin-bottom:10px;">★★★★★</div><p style="font-size:15px; color:#33484C; line-height:1.6; margin:0 0 18px;">“คุ้มเกินราคา 999 มากค่ะ ได้เครื่องมือทำละครสั้นไว้ใช้เอง แถมเอาไปรับงานต่อ คืนทุนตั้งแต่งานแรกเลย”</p><div style="display:flex; align-items:center; gap:12px;"><div style="width:42px; height:42px; border-radius:50%; background:#0A8D9B; color:#fff; font-family:'Kanit'; font-weight:700; display:flex; align-items:center; justify-content:center;">ศ</div><div><div style="font-family:'Kanit'; font-weight:700; font-size:15px;">ศิริพร ม.</div><div style="font-size:13px; color:#7A9498;">ครีเอเตอร์ TikTok</div></div></div></div>
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:24px;"><div style="color:#FF7A1A; font-size:15px; margin-bottom:10px;">★★★★★</div><p style="font-size:15px; color:#33484C; line-height:1.6; margin:0 0 18px;">“ลงทุนครั้งเดียวคุ้มมาก จากที่จ่ายค่า Tool รายเดือนทุกเดือน ตอนนี้ไม่ต้องจ่ายแล้ว ทำของตัวเองได้หมด ขอบคุณครับ”</p><div style="display:flex; align-items:center; gap:12px;"><div style="width:42px; height:42px; border-radius:50%; background:#0FB5C5; color:#fff; font-family:'Kanit'; font-weight:700; display:flex; align-items:center; justify-content:center;">พ</div><div><div style="font-family:'Kanit'; font-weight:700; font-size:15px;">พีรพล จ.</div><div style="font-size:13px; color:#7A9498;">เจ้าของร้านค้า</div></div></div></div>
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:24px;"><div style="color:#FF7A1A; font-size:15px; margin-bottom:10px;">★★★★★</div><p style="font-size:15px; color:#33484C; line-height:1.6; margin:0 0 18px;">“บทเรียนอยู่ในไดร์ฟ ดูง่ายมาก ย้อนดูซ้ำได้ตลอด สอนแบบจับมือทำจริง ทำคลิปปักตะกร้าให้ลูกค้าได้เงินแล้วค่ะ”</p><div style="display:flex; align-items:center; gap:12px;"><div style="width:42px; height:42px; border-radius:50%; background:#FF7A1A; color:#fff; font-family:'Kanit'; font-weight:700; display:flex; align-items:center; justify-content:center;">อ</div><div><div style="font-family:'Kanit'; font-weight:700; font-size:15px;">อรปรียา ส.</div><div style="font-size:13px; color:#7A9498;">นักศึกษา</div></div></div></div>
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:18px; padding:24px;"><div style="color:#FF7A1A; font-size:15px; margin-bottom:10px;">★★★★★</div><p style="font-size:15px; color:#33484C; line-height:1.6; margin:0 0 18px;">“ทำตามแล้วสร้าง Tool ขายเองได้จริง เดือนแรกขายได้หลายหมื่น คอร์สนี้เปลี่ยนชีวิตเลยครับ แนะนำสุดๆ”</p><div style="display:flex; align-items:center; gap:12px;"><div style="width:42px; height:42px; border-radius:50%; background:#0A8D9B; color:#fff; font-family:'Kanit'; font-weight:700; display:flex; align-items:center; justify-content:center;">ณ</div><div><div style="font-family:'Kanit'; font-weight:700; font-size:15px;">ณัฐวุฒิ ค.</div><div style="font-size:13px; color:#7A9498;">ทำคอนเทนต์</div></div></div></div>
+      </div>
+    </section>
+
+    <!-- PRICING / OFFER -->
+    <section style="max-width:760px; margin:0 auto; padding:40px 20px 80px;">
+      <div style="background:#fff; border:2px solid #0FB5C5; border-radius:24px; overflow:hidden; box-shadow:0 24px 60px rgba(15,181,197,0.22);">
+        <div style="background:#0FB5C5; color:#fff; text-align:center; padding:14px; font-family:'Kanit'; font-weight:700; font-size:16px; letter-spacing:0.5px;">🎁 แพ็กเกจเดียว ครบทุกอย่าง</div>
+        <div style="padding:38px 34px;">
+          <div style="text-align:center; margin-bottom:26px;">
+            <div style="font-family:'Sarabun'; color:#94A9AC; text-decoration:line-through; font-size:18px;">ปกติ ฿2,990</div>
+            <div style="font-family:'Kanit'; font-weight:900; font-size:64px; line-height:1; color:#0E2A30;">฿999</div>
+            <div style="font-family:'Kanit'; font-weight:700; color:#FF7A1A; font-size:16px; margin-top:6px;">จ่ายครั้งเดียว เรียนได้ตลอดชีพ</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:28px;">
+            <div style="display:flex; gap:10px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800;">✓</span><span style="font-size:15px; color:#33484C;">7 บทเรียนเต็ม สร้าง Tools ครบทุกแนว (ดูผ่านเว็บหรือ Google Drive)</span></div>
+            <div style="display:flex; gap:10px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800;">✓</span><span style="font-size:15px; color:#33484C;">โบนัส: กลุ่มถาม–ตอบ + อัพเดทเครื่องมือใหม่ฟรี</span></div>
+            <div style="display:flex; gap:10px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800;">✓</span><span style="font-size:15px; color:#33484C;">สอนวิธีขายเครื่องมือ ทำเงินเป็นแสนแบบเจ้าของคอร์ส</span></div>
+          </div>
+          <button onClick="{{ goAuthFn }}" style="width:100%; font-family:'Kanit'; font-weight:800; font-size:21px; padding:18px; border:none; border-radius:14px; background:#FF7A1A; color:#fff; cursor:pointer; box-shadow:0 10px 26px rgba(255,122,26,0.4);">
+            สมัครเรียนเลย ฿999 →
+          </button>
+          <div style="text-align:center; margin-top:14px; font-size:13px; color:#7A9498;">⚡ จ่ายผ่าน QR กสิกรไทย เปิดเรียนทันทีหลังตรวจสอบยอด</div>
+        </div>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <!-- ================= AUTH ================= -->
+  <sc-if value="{{ showAuth }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:440px; margin:0 auto; padding:50px 20px 70px;">
+    <div style="text-align:center; margin-bottom:26px;">
+      <h2 style="font-family:'Kanit'; font-weight:800; font-size:30px; margin:0 0 6px;">{{ authTitle }}</h2>
+      <p style="color:#5E787C; font-size:15px; margin:0;">{{ authSubtitle }}</p>
+    </div>
+    <div style="background:#fff; border:1px solid #E2F1F3; border-radius:20px; padding:30px; box-shadow:0 14px 40px rgba(14,42,48,0.06);">
+      <sc-if value="{{ authIsRegister }}" hint-placeholder-val="{{ true }}">
+        <label style="display:block; font-family:'Kanit'; font-weight:600; font-size:14px; margin-bottom:6px;">ชื่อ–นามสกุล</label>
+        <input ref="{{ nameRef }}" type="text" placeholder="กรอกชื่อของคุณ" style="width:100%; padding:13px 15px; border:1px solid #D6E9EB; border-radius:11px; font-family:'Sarabun'; font-size:15px; margin-bottom:16px; outline:none;">
+      </sc-if>
+      <label style="display:block; font-family:'Kanit'; font-weight:600; font-size:14px; margin-bottom:6px;">อีเมล</label>
+      <input ref="{{ emailRef }}" type="email" placeholder="you@email.com" style="width:100%; padding:13px 15px; border:1px solid #D6E9EB; border-radius:11px; font-family:'Sarabun'; font-size:15px; margin-bottom:16px; outline:none;">
+      <label style="display:block; font-family:'Kanit'; font-weight:600; font-size:14px; margin-bottom:6px;">รหัสผ่าน</label>
+      <input ref="{{ passRef }}" type="password" placeholder="••••••••" style="width:100%; padding:13px 15px; border:1px solid #D6E9EB; border-radius:11px; font-family:'Sarabun'; font-size:15px; margin-bottom:8px; outline:none;">
+      <sc-if value="{{ authError }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFF0E5; color:#D24B00; font-size:14px; padding:10px 14px; border-radius:10px; margin-bottom:8px;">{{ authError }}</div>
+      </sc-if>
+      <button onClick="{{ submitAuth }}" style="width:100%; font-family:'Kanit'; font-weight:700; font-size:17px; padding:15px; border:none; border-radius:12px; background:#0FB5C5; color:#fff; cursor:pointer; margin-top:8px; box-shadow:0 8px 20px rgba(15,181,197,0.3);">{{ authCta }}</button>
+    </div>
+    <div style="text-align:center; margin-top:18px; font-size:15px; color:#5E787C;">
+      <span>{{ authSwitchText }}</span>
+      <button onClick="{{ toggleAuthMode }}" style="background:none; border:none; color:#FF7A1A; font-family:'Kanit'; font-weight:700; font-size:15px; cursor:pointer;">{{ authSwitchCta }}</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ================= PAYMENT ================= -->
+  <sc-if value="{{ showPayment }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:920px; margin:0 auto; padding:40px 20px 70px;">
+
+    <sc-if value="{{ payUnpaid }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <div style="text-align:center; margin-bottom:30px;">
+        <div style="display:inline-flex; align-items:center; gap:8px; background:#FFF0E5; color:#F25C05; font-family:'Kanit'; font-weight:700; font-size:14px; padding:7px 16px; border-radius:999px; margin-bottom:14px;">ขั้นตอนสุดท้าย • เหลืออีกนิดเดียว</div>
+        <h2 style="font-family:'Kanit'; font-weight:800; font-size:30px; margin:0 0 6px;">ชำระเงิน ฿999 เพื่อเปิดบทเรียน</h2>
+        <p style="color:#5E787C; font-size:15px; margin:0;">สแกน QR หรือโอนเข้าบัญชี แล้วกดยืนยันการชำระเงินด้านล่าง</p>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:26px; align-items:start;">
+        <div style="background:#fff; border:1px solid #E2F1F3; border-radius:20px; padding:14px; box-shadow:0 14px 40px rgba(14,42,48,0.07);">
+          <img src="assets/qr-payment.jpg" alt="QR พร้อมเพย์" style="width:100%; display:block; border-radius:12px;">
+        </div>
+        <div>
+          <div style="background:#fff; border:1px solid #E2F1F3; border-radius:20px; padding:26px; margin-bottom:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px;">
+              <span style="font-family:'Kanit'; font-weight:600; color:#5E787C;">ยอดที่ต้องชำระ</span>
+              <span style="font-family:'Kanit'; font-weight:900; font-size:34px; color:#0E2A30;">฿999</span>
+            </div>
+            <div style="border-top:1px dashed #D6E9EB; padding-top:18px; display:flex; flex-direction:column; gap:14px;">
+              <div><div style="font-size:13px; color:#8AA1A4;">ธนาคาร</div><div style="font-family:'Kanit'; font-weight:700; font-size:16px;">ธนาคารกสิกรไทย (KBANK)</div></div>
+              <div><div style="font-size:13px; color:#8AA1A4;">ชื่อบัญชี</div><div style="font-family:'Kanit'; font-weight:700; font-size:16px;">พงศ์ปณต โกมลกนก</div></div>
+              <div>
+                <div style="font-size:13px; color:#8AA1A4;">เลขที่บัญชี</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-family:'Kanit'; font-weight:800; font-size:22px; color:#0A8D9B; letter-spacing:1px;">573-2-30302-4</span>
+                  <button onClick="{{ copyAcct }}" style="font-family:'Sarabun'; font-weight:600; font-size:13px; padding:6px 12px; border:1px solid #0FB5C5; border-radius:9px; background:#fff; color:#0A8D9B; cursor:pointer;">{{ copyLabel }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <div style="font-family:'Kanit'; font-weight:700; font-size:15px; margin-bottom:8px;">แนบสลิปการโอน <span style="color:#F25C05;">*</span></div>
+            <label style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; border:2px dashed #B7D9DD; border-radius:14px; padding:22px; cursor:pointer; background:#F7FCFD;">
+              <input type="file" accept="image/*" onChange="{{ onSlipChange }}" style="display:none;">
+              <span style="font-size:26px;">📤</span>
+              <span style="font-family:'Sarabun'; font-size:14px; color:#5E787C;">แตะเพื่อเลือกภาพสลิป (PNG / JPG)</span>
+            </label>
+            <sc-if value="{{ hasSlip }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:12px; border:1px solid #E2F1F3; border-radius:12px; padding:8px; display:flex; align-items:center; gap:12px; background:#fff;">
+                <img src="{{ slipPreview }}" alt="สลิป" style="width:56px; height:56px; object-fit:cover; border-radius:8px;">
+                <span style="font-family:'Kanit'; font-weight:600; font-size:14px; color:#0A8D9B;">✓ แนบสลิปแล้ว</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ payError }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:10px; background:#FFF0E5; color:#D24B00; font-size:14px; padding:10px 14px; border-radius:10px;">{{ payError }}</div>
+            </sc-if>
+          </div>
+          <button onClick="{{ confirmPayment }}" style="width:100%; font-family:'Kanit'; font-weight:800; font-size:18px; padding:17px; border:none; border-radius:13px; background:#FF7A1A; color:#fff; cursor:pointer; box-shadow:0 10px 26px rgba(255,122,26,0.4);">✓ แจ้งโอนแล้ว / ยืนยันการชำระเงิน</button>
+          <p style="font-size:13px; color:#8AA1A4; text-align:center; margin:12px 0 0; line-height:1.5;">หลังกดยืนยัน ระบบจะส่งให้แอดมินตรวจสอบยอด เมื่ออนุมัติแล้วบทเรียนจะเปิดให้ทันที</p>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ payPending }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:480px; margin:0 auto; text-align:center; background:#fff; border:1px solid #E2F1F3; border-radius:22px; padding:48px 34px; box-shadow:0 14px 40px rgba(14,42,48,0.07);">
+      <div style="width:78px; height:78px; border-radius:50%; background:#FFF0E5; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:38px;">⏳</div>
+      <h2 style="font-family:'Kanit'; font-weight:800; font-size:26px; margin:0 0 10px;">กำลังตรวจสอบการชำระเงิน</h2>
+      <p style="color:#5E787C; font-size:16px; line-height:1.6; margin:0 0 24px;">ขอบคุณค่ะ 🙏 เราได้รับการแจ้งโอนของคุณแล้ว แอดมินกำลังตรวจสอบยอด เมื่ออนุมัติบทเรียนจะเปิดให้ทันที</p>
+      <button onClick="{{ goLessonsFn }}" style="font-family:'Kanit'; font-weight:700; font-size:16px; padding:13px 26px; border:1px solid #D6E9EB; border-radius:12px; background:#fff; color:#0A8D9B; cursor:pointer;">รีเฟรชสถานะ</button>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ payPaid }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:480px; margin:0 auto; text-align:center; background:#fff; border:1px solid #E2F1F3; border-radius:22px; padding:48px 34px; box-shadow:0 14px 40px rgba(14,42,48,0.07);">
+      <div style="width:78px; height:78px; border-radius:50%; background:#E6F8FA; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:38px;">✅</div>
+      <h2 style="font-family:'Kanit'; font-weight:800; font-size:26px; margin:0 0 10px;">ชำระเงินเรียบร้อยแล้ว</h2>
+      <p style="color:#5E787C; font-size:16px; line-height:1.6; margin:0 0 24px;">บัญชีของคุณเปิดเรียนได้เต็มรูปแบบแล้ว เริ่มเรียนได้เลย!</p>
+      <button onClick="{{ goLessonsFn }}" style="font-family:'Kanit'; font-weight:800; font-size:17px; padding:15px 30px; border:none; border-radius:12px; background:#0FB5C5; color:#fff; cursor:pointer;">เข้าสู่บทเรียน →</button>
+    </div>
+    </sc-if>
+
+  </div>
+  </sc-if>
+
+  <!-- ================= LESSONS ================= -->
+  <sc-if value="{{ showLessons }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1000px; margin:0 auto; padding:36px 20px 70px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:14px; margin-bottom:26px;">
+      <div>
+        <div style="font-family:'Kanit'; font-weight:700; color:#0FB5C5; font-size:14px;">ยินดีต้อนรับ, {{ userName }} 👋</div>
+        <h2 style="font-family:'Kanit'; font-weight:800; font-size:30px; margin:4px 0 0;">บทเรียนทั้งหมด</h2>
+      </div>
+      <div style="background:#E6F8FA; color:#0A8D9B; font-family:'Kanit'; font-weight:700; font-size:13px; padding:8px 14px; border-radius:999px;">✓ เข้าถึงได้ตลอดชีพ</div>
+    </div>
+
+    <sc-if value="{{ lessonOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="background:#0E2A30; border-radius:18px; padding:14px; margin-bottom:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px 12px;">
+        <div style="font-family:'Kanit'; font-weight:700; color:#fff; font-size:17px;">{{ currentLessonTitle }}</div>
+        <button onClick="{{ closeLesson }}" style="font-family:'Sarabun'; font-weight:600; font-size:13px; padding:6px 12px; border:none; border-radius:9px; background:rgba(255,255,255,0.15); color:#fff; cursor:pointer;">✕ ปิด</button>
+      </div>
+      <sc-if value="{{ currentLessonHasVideo }}" hint-placeholder-val="{{ false }}">
+        <div style="position:relative; width:100%; padding-top:56.25%; border-radius:12px; overflow:hidden; background:#000;">
+          <iframe src="{{ currentLessonSrc }}" allow="autoplay; encrypted-media" allowfullscreen style="position:absolute; inset:0; width:100%; height:100%; border:0;"></iframe>
+        </div>
+      </sc-if>
+      <sc-if value="{{ currentLessonNoVideo }}" hint-placeholder-val="{{ true }}">
+        <div style="border-radius:12px; background:repeating-linear-gradient(45deg,#13343b,#13343b 12px,#163b43 12px,#163b43 24px); padding:48px 24px; text-align:center;">
+          <div style="font-size:34px; margin-bottom:10px;">🎬</div>
+          <div style="font-family:'Kanit'; font-weight:700; color:#fff; font-size:16px; margin-bottom:6px;">ยังไม่ได้วางลิงก์วิดีโอบทเรียนนี้</div>
+          <div style="font-family:monospace; font-size:13px; color:#7FB3BB;">แอดมินใส่ Google Drive File ID ที่หน้าแอดมินเพื่อแสดงวิดีโอ</div>
+        </div>
+      </sc-if>
+      <div style="text-align:center; padding:12px 0 4px;">
+        <a href="{{ currentLessonDriveUrl }}" target="_blank" style="display:inline-flex; align-items:center; gap:8px; font-family:'Kanit'; font-weight:600; font-size:14px; color:#0FB5C5; text-decoration:none;">📂 เปิดดูบน Google Drive</a>
+      </div>
+    </div>
+    </sc-if>
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <sc-for list="{{ lessons }}" as="lesson" hint-placeholder-count="6">
+        <div onClick="{{ lesson.open }}" style="display:flex; align-items:center; gap:16px; background:#fff; border:1px solid #E2F1F3; border-radius:15px; padding:18px 20px; cursor:pointer;">
+          <div style="flex-shrink:0; width:46px; height:46px; border-radius:12px; background:#0FB5C5; color:#fff; font-family:'Kanit'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center;">{{ lesson.num }}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-family:'Kanit'; font-weight:700; font-size:16px;">{{ lesson.title }}</div>
+            <div style="font-size:14px; color:#6B8488;">{{ lesson.desc }}</div>
+          </div>
+          <div style="flex-shrink:0; display:flex; align-items:center; gap:10px;">
+            <span style="font-size:13px; color:#9CB3B6;">{{ lesson.duration }}</span>
+            <span style="width:38px; height:38px; border-radius:50%; background:#E6F8FA; color:#0A8D9B; display:flex; align-items:center; justify-content:center; font-size:15px;">▶</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ================= ADMIN ================= -->
+  <sc-if value="{{ showAdmin }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1000px; margin:0 auto; padding:36px 20px 70px;">
+    <h2 style="font-family:'Kanit'; font-weight:800; font-size:28px; margin:0 0 4px;">หลังบ้าน — จัดการผู้เรียน</h2>
+    <p style="color:#5E787C; font-size:15px; margin:0 0 24px;">อนุมัติผู้ที่ชำระเงินแล้วเพื่อเปิดบทเรียน • ผู้ที่ยังไม่อนุมัติจะดูบทเรียนไม่ได้</p>
+
+    <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px;">
+      <div style="flex:1; min-width:140px; background:#fff; border:1px solid #E2F1F3; border-radius:14px; padding:18px;"><div style="font-family:'Kanit'; font-weight:800; font-size:28px; color:#0E2A30;">{{ statTotal }}</div><div style="font-size:13px; color:#7A9498;">ผู้สมัครทั้งหมด</div></div>
+      <div style="flex:1; min-width:140px; background:#fff; border:1px solid #E2F1F3; border-radius:14px; padding:18px;"><div style="font-family:'Kanit'; font-weight:800; font-size:28px; color:#F25C05;">{{ statPending }}</div><div style="font-size:13px; color:#7A9498;">รอตรวจสอบ</div></div>
+      <div style="flex:1; min-width:140px; background:#fff; border:1px solid #E2F1F3; border-radius:14px; padding:18px;"><div style="font-family:'Kanit'; font-weight:800; font-size:28px; color:#0A8D9B;">{{ statPaid }}</div><div style="font-size:13px; color:#7A9498;">อนุมัติแล้ว</div></div>
+    </div>
+
+    <div style="background:#fff; border:1px solid #E2F1F3; border-radius:16px; overflow:hidden;">
+      <sc-for list="{{ adminUsers }}" as="u" hint-placeholder-count="3">
+        <div style="display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid #EEF6F7;">
+          <div style="flex:1; min-width:0;">
+            <div style="font-family:'Kanit'; font-weight:700; font-size:15px;">{{ u.name }}</div>
+            <div style="font-size:13px; color:#7A9498;">{{ u.email }}</div>
+          </div>
+          <sc-if value="{{ u.hasSlip }}" hint-placeholder-val="{{ false }}">
+            <a href="{{ u.slip }}" target="_blank" style="flex-shrink:0; display:block;"><img src="{{ u.slip }}" alt="สลิป" style="width:42px; height:42px; object-fit:cover; border-radius:8px; border:1px solid #D6E9EB;"></a>
+          </sc-if>
+          <div style="flex-shrink:0;"><span style="font-family:'Kanit'; font-weight:700; font-size:12px; padding:5px 12px; border-radius:999px; background:{{ u.badgeBg }}; color:{{ u.badgeColor }};">{{ u.statusLabel }}</span></div>
+          <div style="flex-shrink:0; display:flex; gap:8px;">
+            <button onClick="{{ u.approve }}" style="font-family:'Kanit'; font-weight:600; font-size:13px; padding:7px 14px; border:none; border-radius:9px; background:#0FB5C5; color:#fff; cursor:pointer;">อนุมัติ</button>
+            <button onClick="{{ u.revoke }}" style="font-family:'Kanit'; font-weight:600; font-size:13px; padding:7px 14px; border:1px solid #E0C0B0; border-radius:9px; background:#fff; color:#C2410C; cursor:pointer;">ยกเลิก</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:14px; font-size:13px; color:#8AA1A4;">บัญชีแอดมินสำหรับทดสอบ: <b>admin</b> / รหัส <b>admin123</b></div>
+  </div>
+  </sc-if>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer style="background:#0E2A30; color:#9CBABE; margin-top:auto;">
+    <div style="max-width:1120px; margin:0 auto; padding:30px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+      <div style="font-family:'Kanit'; font-weight:700; color:#fff; font-size:16px;">FLOW TOOLS · คอร์สสร้างเครื่องมือ AI</div>
+      <div style="display:flex; gap:18px; font-size:13px;">
+        <span>© 2025 พงศ์ปณต โกมลกนก</span>
+        <button onClick="{{ goAdminFn }}" style="background:none; border:none; color:#5E787C; font-size:13px; cursor:pointer;">แอดมิน</button>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1120,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.emailRef = React.createRef();
+    this.passRef = React.createRef();
+    this.nameRef = React.createRef();
+    this.acct = '5732303024';
+    this.lessonDefs = [
+      { id:1, title:'บทที่ 1 · ปูพื้นฐาน Google Flow', desc:'แนวคิดการสร้างเครื่องมือ AI ตั้งแต่ศูนย์', duration:'42 นาที', driveId:'' },
+      { id:2, title:'บทที่ 2 · เครื่องมือทำหนังสั้น', desc:'สร้าง Tool ผลิตหนังสั้นด้วย AI', duration:'55 นาที', driveId:'' },
+      { id:3, title:'บทที่ 3 · คลิปปักตะกร้า & คลิปขายของ', desc:'เครื่องมือผลิตคลิปขายของยิงรัวๆ', duration:'48 นาที', driveId:'' },
+      { id:4, title:'บทที่ 4 · คลิปเล่าเรื่อง & บอร์ดแคส', desc:'Tool เล่าเรื่อง ทำบอร์ดแคสต์อัตโนมัติ', duration:'50 นาที', driveId:'' },
+      { id:5, title:'บทที่ 5 · ละครสั้น จีน & คุณธรรม', desc:'สร้าง Tool ผลิตละครทุกแนวยอดนิยม', duration:'58 นาที', driveId:'' },
+      { id:6, title:'บทที่ 6 · แก้ไข อัพเดท & ขายต่อยอด', desc:'ดูแล อัพเดท และวางขายเครื่องมือทำเงิน', duration:'46 นาที', driveId:'' },
+    ];
+    this.state = {
+      route: 'landing',
+      currentEmail: null,
+      users: [],
+      authMode: 'register',
+      authError: '',
+      lessonOpen: null,
+      copied: false,
+      slipPreview: null,
+      payError: '',
+      now: Date.now(),
+      ready: false,
+    };
+  }
+
+  componentDidMount() {
+    let users = [];
+    try { users = JSON.parse(localStorage.getItem('gfc_users') || '[]'); } catch(e) {}
+    if (!users.find(u => u.email === 'admin')) {
+      users.push({ email:'admin', password:'admin123', name:'แอดมิน', role:'admin', status:'paid' });
+    }
+    const session = localStorage.getItem('gfc_session');
+    let deadline = parseInt(localStorage.getItem('gfc_deadline') || '0', 10);
+    if (!deadline || deadline < Date.now()) {
+      deadline = Date.now() + 2*24*3600*1000 + 11*3600*1000;
+      localStorage.setItem('gfc_deadline', String(deadline));
+    }
+    this.deadline = deadline;
+    this.setState({ users, currentEmail: session || null, ready: true });
+    this._saveUsers(users);
+    this._timer = setInterval(() => this.setState({ now: Date.now() }), 1000);
+  }
+  componentWillUnmount() { clearInterval(this._timer); }
+
+  _saveUsers(users) { try { localStorage.setItem('gfc_users', JSON.stringify(users)); } catch(e) {} }
+  _current() { return this.state.users.find(u => u.email === this.state.currentEmail) || null; }
+
+  goLanding = () => this.setState({ route:'landing' });
+  goAuthFn = () => {
+    if (this._current()) return this._routeAfterAuth();
+    this.setState({ route:'auth', authError:'', authMode:'register' });
+  };
+  goPaymentFn = () => this.setState({ route:'payment' });
+  goLessonsFn = () => {
+    const u = this._current();
+    if (!u) return this.setState({ route:'auth', authError:'', authMode:'login' });
+    if (u.status === 'paid') return this.setState({ route:'lessons' });
+    return this.setState({ route:'payment' });
+  };
+  goAdminFn = () => {
+    const u = this._current();
+    if (u && u.role === 'admin') return this.setState({ route:'admin' });
+    return this.setState({ route:'auth', authMode:'login', authError:'เข้าสู่ระบบด้วยบัญชีแอดมิน (admin / admin123)' });
+  };
+  logout = () => { localStorage.removeItem('gfc_session'); this.setState({ currentEmail:null, route:'landing' }); };
+
+  _routeAfterAuth() {
+    const u = this._current();
+    if (u && u.role === 'admin') return this.setState({ route:'admin' });
+    if (u && u.status === 'paid') return this.setState({ route:'lessons' });
+    return this.setState({ route:'payment' });
+  }
+
+  toggleAuthMode = () => this.setState(s => ({ authMode: s.authMode === 'login' ? 'register' : 'login', authError:'' }));
+
+  submitAuth = () => {
+    const email = (this.emailRef.current?.value || '').trim().toLowerCase();
+    const pass = this.passRef.current?.value || '';
+    if (!email || !pass) return this.setState({ authError:'กรุณากรอกอีเมลและรหัสผ่าน' });
+    const users = this.state.users.slice();
+    if (this.state.authMode === 'register') {
+      const name = (this.nameRef.current?.value || '').trim();
+      if (!name) return this.setState({ authError:'กรุณากรอกชื่อ' });
+      if (users.find(u => u.email === email)) return this.setState({ authError:'อีเมลนี้มีผู้ใช้แล้ว ลองเข้าสู่ระบบแทน' });
+      users.push({ email, password:pass, name, role:'user', status:'unpaid' });
+      this._saveUsers(users);
+      localStorage.setItem('gfc_session', email);
+      this.setState({ users, currentEmail:email, authError:'' }, () => this.setState({ route:'payment' }));
+    } else {
+      const found = users.find(u => u.email === email);
+      if (!found || found.password !== pass) return this.setState({ authError:'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+      localStorage.setItem('gfc_session', email);
+      this.setState({ currentEmail:email, authError:'' }, () => this._routeAfterAuth());
+    }
+  };
+
+  handleSlip = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => this.setState({ slipPreview: reader.result, payError: '' });
+    reader.readAsDataURL(file);
+  };
+
+  confirmPayment = () => {
+    if (!this.state.slipPreview) return this.setState({ payError: 'กรุณาแนบภาพสลิปการโอนก่อนยืนยัน' });
+    const users = this.state.users.map(u => u.email === this.state.currentEmail ? { ...u, status:'pending', paidAt:Date.now(), slip:this.state.slipPreview } : u);
+    this._saveUsers(users);
+    this.setState({ users, slipPreview: null });
+  };
+
+  copyAcct = () => {
+    try { navigator.clipboard.writeText(this.acct); } catch(e) {}
+    this.setState({ copied:true });
+    clearTimeout(this._cpt);
+    this._cpt = setTimeout(() => this.setState({ copied:false }), 1800);
+  };
+
+  openLesson = (id) => this.setState({ lessonOpen:id });
+  closeLesson = () => this.setState({ lessonOpen:null });
+
+  approveUser = (email) => {
+    const users = this.state.users.map(u => u.email === email ? { ...u, status:'paid' } : u);
+    this._saveUsers(users); this.setState({ users });
+  };
+  revokeUser = (email) => {
+    const users = this.state.users.map(u => u.email === email ? { ...u, status:'unpaid' } : u);
+    this._saveUsers(users); this.setState({ users });
+  };
+
+  _fmt(n) { return String(n).padStart(2,'0'); }
+
+  renderVals() {
+    const { route, authMode, authError, lessonOpen, copied } = this.state;
+    const cur = this._current();
+    const isLoggedIn = !!cur;
+    const isAdmin = !!(cur && cur.role === 'admin');
+
+    // countdown
+    let rem = Math.max(0, (this.deadline || Date.now()) - this.state.now);
+    const cdDays = Math.floor(rem / (24*3600*1000)); rem -= cdDays*24*3600*1000;
+    const cdHours = Math.floor(rem / (3600*1000)); rem -= cdHours*3600*1000;
+    const cdMins = Math.floor(rem / (60*1000)); rem -= cdMins*60*1000;
+    const cdSecs = Math.floor(rem / 1000);
+
+    // lessons
+    const lessons = this.lessonDefs.map((l, i) => ({
+      ...l, num: i+1, open: () => this.openLesson(l.id),
+    }));
+    const curLesson = this.lessonDefs.find(l => l.id === lessonOpen) || null;
+    const hasVideo = !!(curLesson && curLesson.driveId);
+
+    // admin
+    const statusMap = {
+      unpaid: { label:'ยังไม่ชำระ', bg:'#FFF0E5', color:'#C2410C' },
+      pending: { label:'รอตรวจสอบ', bg:'#FFF7E0', color:'#B45309' },
+      paid: { label:'อนุมัติแล้ว', bg:'#E6F8FA', color:'#0A8D9B' },
+    };
+    const realUsers = this.state.users.filter(u => u.role !== 'admin');
+    const adminUsers = realUsers.map(u => {
+      const sm = statusMap[u.status] || statusMap.unpaid;
+      return { name:u.name, email:u.email, statusLabel:sm.label, badgeBg:sm.bg, badgeColor:sm.color,
+        slip:u.slip || '', hasSlip: !!u.slip,
+        approve: () => this.approveUser(u.email), revoke: () => this.revokeUser(u.email) };
+    });
+
+    return {
+      // routing
+      showLanding: route === 'landing',
+      showAuth: route === 'auth',
+      showPayment: route === 'payment',
+      showLessons: route === 'lessons',
+      showAdmin: route === 'admin',
+      // nav
+      isLoggedIn, isLoggedOut: !isLoggedIn, isAdmin,
+      userName: cur ? cur.name : '',
+      goLanding: this.goLanding, goAuthFn: this.goAuthFn, goPaymentFn: this.goPaymentFn,
+      goLessonsFn: this.goLessonsFn, goAdminFn: this.goAdminFn, logout: this.logout,
+      // countdown
+      cdDays: this._fmt(cdDays), cdHours: this._fmt(cdHours), cdMins: this._fmt(cdMins), cdSecs: this._fmt(cdSecs),
+      // auth
+      authIsLogin: authMode === 'login', authIsRegister: authMode === 'register',
+      authTitle: authMode === 'login' ? 'เข้าสู่ระบบ' : 'สมัครเรียน ฿999',
+      authSubtitle: authMode === 'login' ? 'เข้าสู่บัญชีของคุณเพื่อเรียนต่อ' : 'สร้างบัญชีเพื่อเริ่มเรียนวันนี้',
+      authCta: authMode === 'login' ? 'เข้าสู่ระบบ' : 'สมัครและไปชำระเงิน',
+      authSwitchText: authMode === 'login' ? 'ยังไม่มีบัญชี? ' : 'มีบัญชีแล้ว? ',
+      authSwitchCta: authMode === 'login' ? 'สมัครเลย' : 'เข้าสู่ระบบ',
+      authError, toggleAuthMode: this.toggleAuthMode, submitAuth: this.submitAuth,
+      emailRef: this.emailRef, passRef: this.passRef, nameRef: this.nameRef,
+      // payment
+      payUnpaid: !!(cur && cur.status === 'unpaid'),
+      payPending: !!(cur && cur.status === 'pending'),
+      payPaid: !!(cur && cur.status === 'paid'),
+      confirmPayment: this.confirmPayment,
+      onSlipChange: this.handleSlip,
+      slipPreview: this.state.slipPreview, hasSlip: !!this.state.slipPreview,
+      payError: this.state.payError,
+      copyAcct: this.copyAcct, copyLabel: copied ? 'คัดลอกแล้ว ✓' : 'คัดลอก',
+      // lessons
+      lessons, lessonOpen,
+      currentLessonTitle: curLesson ? curLesson.title : '',
+      currentLessonSrc: hasVideo ? ('https://drive.google.com/file/d/' + curLesson.driveId + '/preview') : '',
+      currentLessonDriveUrl: hasVideo ? ('https://drive.google.com/file/d/' + curLesson.driveId + '/view') : 'https://drive.google.com',
+      currentLessonHasVideo: hasVideo,
+      currentLessonNoVideo: !!(curLesson && !hasVideo),
+      // admin
+      adminUsers,
+      statTotal: realUsers.length,
+      statPending: realUsers.filter(u => u.status === 'pending').length,
+      statPaid: realUsers.filter(u => u.status === 'paid').length,
+    };
+  }
+}
+</script>
+</body>
+</html>
