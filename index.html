@@ -322,7 +322,7 @@ a { text-decoration: none; }
             <div style="background:#fff; border:1px solid #E2F1F3; border-radius:20px; padding:26px; margin-bottom:18px;">
               <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px;">
                 <span style="font-family:'Kanit'; font-weight:600; color:#5E787C;">ยอดที่ต้องชำระ</span>
-                <span style="font-family:'Kanit'; font-weight:900; font-size:34px; color:#0E2A30;">฿999</span>
+                <span id="pay-top-amount" style="font-family:'Kanit'; font-weight:900; font-size:34px; color:#0E2A30;">฿999</span>
               </div>
               <div style="border-top:1px dashed #D6E9EB; padding-top:18px; display:flex; flex-direction:column; gap:14px;">
                 <div><div style="font-size:13px; color:#8AA1A4;">ธนาคาร</div><div style="font-family:'Kanit'; font-weight:700; font-size:16px;">ธนาคารกสิกรไทย (KBANK)</div></div>
@@ -361,7 +361,7 @@ a { text-decoration: none; }
 
               <!-- Price display -->
               <div id="price-display" style="margin-top:14px; background:#F2FBFC; border:1px solid #C8E8EB; border-radius:12px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:14px; color:#5E787C;" id="price-label">ยอดที่ต้องชำระ</span>
+                <span style="font-size:14px; color:#5E787C;" id="price-label">ยอดหลังหักโค้ดส่วนลด</span>
                 <span style="font-family:'Kanit'; font-weight:900; font-size:24px; color:#0E2A30;" id="price-amount">฿999</span>
               </div>
 
@@ -744,28 +744,37 @@ async function submitAuth() {
     } else {
       data = await api('POST', '/api/login', { email, password: pass });
     }
-    if (!data.success) { setAuthError(data.message || 'เกิดข้อผิดพลาด'); btn.disabled = false; renderAuthScreen(); return; }
+    if (!data.success) {
+      const msg = data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+      btn.disabled = false;
+      btn.textContent = state.authMode === 'register' ? 'สมัครและไปชำระเงิน' : 'เข้าสู่ระบบ';
+      setAuthError(msg);
+      return;
+    }
     currentUserDoc = data.user;
     routeAfterAuth();
   } catch(e) {
-    setAuthError('ไม่สามารถเชื่อมต่อ server ได้');
-    btn.disabled = false; renderAuthScreen();
+    btn.disabled = false;
+    btn.textContent = state.authMode === 'register' ? 'สมัครและไปชำระเงิน' : 'เข้าสู่ระบบ';
+    setAuthError('ไม่สามารถเชื่อมต่อ server ได้ กรุณาลองใหม่');
   }
 }
 
 // ─── Payment ──────────────────────────────────────────────
 function updatePriceDisplay() {
-  const base     = PACKAGE_PRICES[state.selectedPackage] || 999;
-  const final    = Math.max(0, base - state.discountAmount);
-  const el       = document.getElementById('price-amount');
-  const lbl      = document.getElementById('price-label');
+  const base  = PACKAGE_PRICES[state.selectedPackage] || 999;
+  const final = Math.max(0, base - state.discountAmount);
+  const el    = document.getElementById('price-amount');
+  const lbl   = document.getElementById('price-label');
+  const top   = document.getElementById('pay-top-amount');
   if (!el) return;
+  if (top) top.textContent = `฿${base.toLocaleString()}`;
   if (state.discountAmount > 0) {
     el.innerHTML = `<span style="text-decoration:line-through;color:#9CB3B6;font-size:18px;">฿${base.toLocaleString()}</span> <span style="color:#FF7A1A;">฿${final.toLocaleString()}</span>`;
-    lbl.textContent = `ยอดที่ต้องชำระ (ลด ฿${state.discountAmount})`;
+    if (lbl) lbl.textContent = `ยอดหลังหักโค้ดส่วนลด (ลด ฿${state.discountAmount.toLocaleString()})`;
   } else {
     el.textContent = `฿${base.toLocaleString()}`;
-    lbl.textContent = 'ยอดที่ต้องชำระ';
+    if (lbl) lbl.textContent = 'ยอดหลังหักโค้ดส่วนลด';
   }
 }
 function renderPaymentScreen() {
