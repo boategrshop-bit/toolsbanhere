@@ -217,7 +217,7 @@ a { text-decoration: none; }
               <div style="display:flex; gap:9px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800; flex-shrink:0;">✓</span><span style="font-size:14px; color:#33484C;">ดาวน์โหลด PDF ทาง Google Drive</span></div>
               <div style="display:flex; gap:9px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800; flex-shrink:0;">✓</span><span style="font-size:14px; color:#33484C;">อ่านได้ทุกอุปกรณ์ ไม่มีวันหมดอายุ</span></div>
             </div>
-            <button onclick="goAuth('ebook')" style="width:100%; font-family:'Kanit'; font-weight:700; font-size:17px; padding:15px; border:2px solid #0FB5C5; border-radius:13px; background:#fff; color:#0A8D9B; cursor:pointer;">
+            <button onclick="showPkgModal('ebook')" style="width:100%; font-family:'Kanit'; font-weight:700; font-size:17px; padding:15px; border:2px solid #0FB5C5; border-radius:13px; background:#fff; color:#0A8D9B; cursor:pointer;">
               สั่งซื้อ E-Book ฿350 →
             </button>
           </div>
@@ -243,7 +243,7 @@ a { text-decoration: none; }
               <div style="display:flex; gap:9px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800; flex-shrink:0;">✓</span><span style="font-size:14px; color:#D6EAEC;">กลุ่มถาม–ตอบ + อัพเดทเครื่องมือใหม่ฟรี</span></div>
               <div style="display:flex; gap:9px; align-items:flex-start;"><span style="color:#FF7A1A; font-weight:800; flex-shrink:0;">✓</span><span style="font-size:14px; color:#FFC08A;">สอนวิธีขายเครื่องมือ ทำเงินเป็นแสน</span></div>
             </div>
-            <button onclick="goAuth('combo')" style="width:100%; font-family:'Kanit'; font-weight:800; font-size:19px; padding:17px; border:none; border-radius:13px; background:#FF7A1A; color:#fff; cursor:pointer; box-shadow:0 10px 26px rgba(255,122,26,0.50);">
+            <button onclick="showPkgModal('combo')" style="width:100%; font-family:'Kanit'; font-weight:800; font-size:19px; padding:17px; border:none; border-radius:13px; background:#FF7A1A; color:#fff; cursor:pointer; box-shadow:0 10px 26px rgba(255,122,26,0.50);">
               สั่งซื้อเซตนี้ ฿1,199 →
             </button>
             <div style="text-align:center; margin-top:12px; font-size:13px; color:#7A9498;">⚡ เปิดเรียนทันทีหลังอัพสลิป</div>
@@ -265,7 +265,7 @@ a { text-decoration: none; }
               <div style="display:flex; gap:9px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800; flex-shrink:0;">✓</span><span style="font-size:14px; color:#33484C;">กลุ่มถาม–ตอบ + อัพเดทเครื่องมือใหม่ฟรี</span></div>
               <div style="display:flex; gap:9px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800; flex-shrink:0;">✓</span><span style="font-size:14px; color:#33484C;">สอนวิธีขายเครื่องมือ ทำเงินเป็นแสน</span></div>
             </div>
-            <button onclick="goAuth('course')" style="width:100%; font-family:'Kanit'; font-weight:700; font-size:17px; padding:15px; border:2px solid #0FB5C5; border-radius:13px; background:#fff; color:#0A8D9B; cursor:pointer;">
+            <button onclick="showPkgModal('course')" style="width:100%; font-family:'Kanit'; font-weight:700; font-size:17px; padding:15px; border:2px solid #0FB5C5; border-radius:13px; background:#fff; color:#0A8D9B; cursor:pointer;">
               สั่งซื้อคอร์ส ฿999 →
             </button>
           </div>
@@ -351,7 +351,7 @@ a { text-decoration: none; }
               <div style="margin-top:16px;">
                 <div style="font-family:'Kanit'; font-weight:700; font-size:15px; margin-bottom:8px;">โค้ดส่วนลด <span style="font-weight:400; color:#7A9498; font-size:13px;">(ถ้ามี)</span></div>
                 <div style="display:flex; gap:8px;">
-                  <input id="discount-input" type="text" placeholder="เช่น STORYPRO หรือ AFF"
+                  <input id="discount-input" type="text" placeholder="ใส่โค้ดส่วนลด"
                     style="flex:1; padding:11px 14px; border:1px solid #D6E9EB; border-radius:11px; font-family:'Kanit'; font-size:15px; outline:none; color:#0E2A30; text-transform:uppercase;"
                     oninput="this.value=this.value.toUpperCase()">
                   <button onclick="applyDiscount()" style="font-family:'Kanit'; font-weight:700; font-size:14px; padding:11px 18px; border:none; border-radius:11px; background:#0FB5C5; color:#fff; cursor:pointer;">ใช้โค้ด</button>
@@ -472,6 +472,26 @@ a { text-decoration: none; }
 
   </main>
 
+  <!-- ===== ORDER SUMMARY MODAL ===== -->
+  <div id="pkg-modal" onclick="if(event.target===this)closePkgModal()" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(14,42,48,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:22px;padding:36px 32px;max-width:420px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,0.18);position:relative;">
+      <button onclick="closePkgModal()" style="position:absolute;top:16px;right:18px;background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1;">×</button>
+      <div id="pkg-modal-badge" style="display:inline-block;font-family:'Kanit';font-weight:700;font-size:12px;padding:4px 12px;border-radius:999px;margin-bottom:12px;"></div>
+      <h3 id="pkg-modal-title" style="font-family:'Kanit';font-weight:800;font-size:22px;color:#0E2A30;margin:0 0 4px;"></h3>
+      <p id="pkg-modal-desc" style="font-size:14px;color:#5E787C;margin:0 0 18px;"></p>
+      <div id="pkg-modal-features" style="margin-bottom:20px;display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="background:#F2FBFC;border:1px solid #C8E8EB;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <span style="font-size:14px;color:#5E787C;">ยอดที่ต้องชำระ</span>
+        <div style="text-align:right;">
+          <div id="pkg-modal-old" style="font-size:13px;color:#aaa;text-decoration:line-through;"></div>
+          <div id="pkg-modal-price" style="font-family:'Kanit';font-weight:900;font-size:28px;color:#0E2A30;"></div>
+        </div>
+      </div>
+      <button id="pkg-modal-btn" onclick="proceedFromModal()" style="width:100%;font-family:'Kanit';font-weight:800;font-size:17px;padding:16px;border:none;border-radius:13px;background:#FF7A1A;color:#fff;cursor:pointer;box-shadow:0 8px 20px rgba(255,122,26,0.4);">สั่งซื้อ / ดำเนินการต่อ →</button>
+      <p style="text-align:center;font-size:12px;color:#aaa;margin:10px 0 0;">จ่ายผ่าน QR พร้อมเพย์ · รับของทาง Email</p>
+    </div>
+  </div>
+
   <!-- ===== FOOTER ===== -->
   <footer style="background:#0E2A30; color:#9CBABE; margin-top:auto;">
     <div style="max-width:1120px; margin:0 auto; padding:30px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
@@ -578,6 +598,49 @@ function updateNav() {
   document.getElementById('nav-admin').style.display   = isAdmin  ? '' : 'none';
 }
 function goLanding() { showScreen('landing'); updateNav(); }
+
+// ─── Package Modal ────────────────────────────────────────
+const PKG_INFO = {
+  ebook:  {
+    badge:'📖 E-BOOK', badgeBg:'#FFF7ED', badgeColor:'#C2410C',
+    title:'E-Book อย่างเดียว', desc:'คู่มือสร้าง Google Flow Tools ฉบับสมบูรณ์',
+    oldPrice:'฿690', price:'฿350',
+    features:['📘 E-Book คู่มือครบ ตั้งแต่พื้นฐาน–ขายจริง','☁️ ดาวน์โหลด PDF ทาง Google Drive','♾️ อ่านได้ทุกอุปกรณ์ ไม่มีวันหมดอายุ'],
+  },
+  combo: {
+    badge:'🔥 แนะนำ · ขายดีที่สุด', badgeBg:'#FF7A1A', badgeColor:'#fff',
+    title:'คอร์ส + E-Book', desc:'วิดีโอ 9 บทเรียน + คู่มือ E-Book ครบเซต',
+    oldPrice:'฿3,680', price:'฿1,199',
+    features:['🎬 9 วิดีโอบทเรียนเต็ม ดูผ่านเว็บหรือ Drive','📘 E-Book คู่มือ PDF ฉบับสมบูรณ์','👥 กลุ่มถาม–ตอบ + อัพเดทเครื่องมือใหม่ฟรี','💰 สอนวิธีขายเครื่องมือ ทำเงินเป็นแสน'],
+  },
+  course: {
+    badge:'🎬 คอร์สวิดีโอ', badgeBg:'#E6F8FA', badgeColor:'#0A8D9B',
+    title:'คอร์สอย่างเดียว', desc:'วิดีโอ 9 บทเรียนสอนสร้าง Tools ครบกระบวนการ',
+    oldPrice:'฿2,990', price:'฿999',
+    features:['🎬 9 วิดีโอบทเรียนเต็ม ดูผ่านเว็บหรือ Drive','👥 กลุ่มถาม–ตอบ + อัพเดทเครื่องมือใหม่ฟรี','💰 สอนวิธีขายเครื่องมือ ทำเงินเป็นแสน'],
+  },
+};
+let _pendingPkg = 'course';
+function showPkgModal(pkg) {
+  if (currentUserDoc) { goAuth(pkg); return; }
+  _pendingPkg = pkg;
+  const info = PKG_INFO[pkg];
+  const el = id => document.getElementById(id);
+  el('pkg-modal-badge').textContent = info.badge;
+  el('pkg-modal-badge').style.background = info.badgeBg;
+  el('pkg-modal-badge').style.color = info.badgeColor;
+  el('pkg-modal-title').textContent = info.title;
+  el('pkg-modal-desc').textContent = info.desc;
+  el('pkg-modal-old').textContent = info.oldPrice;
+  el('pkg-modal-price').textContent = info.price;
+  el('pkg-modal-features').innerHTML = info.features.map(f =>
+    `<div style="display:flex;gap:10px;align-items:flex-start;font-size:14px;color:#0E2A30;">${f}</div>`
+  ).join('');
+  const modal = el('pkg-modal');
+  modal.style.display = 'flex';
+}
+function closePkgModal() { document.getElementById('pkg-modal').style.display = 'none'; }
+function proceedFromModal() { closePkgModal(); goAuth(_pendingPkg); }
 function goAuth(pkgOrMode) {
   if (currentUserDoc) { routeAfterAuth(); return; }
   // ถ้าเป็น package name ให้เก็บไว้ ถ้าเป็น login/register ให้ใช้เป็น mode
