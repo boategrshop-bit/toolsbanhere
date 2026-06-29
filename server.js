@@ -220,7 +220,20 @@ function buildApproveEmailHtml(user) {
 </body></html>`;
 }
 
-async function sendApproveEmail(user) {
+// แถวรูปสลิปสำหรับเมลแอดมิน (ถ้ามีไฟล์สลิป)
+function slipBlockHtml(user) {
+  const file = user.slip || user.upgradeRequest?.slip;
+  if (!file) return '';
+  const url = `${BASE_URL}/uploads/${file}`;
+  return `
+    <div style="margin-top:18px;">
+      <div style="font-size:13px;color:#7A9498;margin-bottom:8px;">📎 สลิปการโอน</div>
+      <a href="${url}" target="_blank"><img src="${url}" alt="สลิป" style="max-width:100%;border-radius:12px;border:1px solid #E2F1F3;display:block;"></a>
+      <a href="${url}" target="_blank" style="display:inline-block;margin-top:8px;font-size:13px;color:#0FB5C5;">เปิดสลิปขนาดเต็ม →</a>
+    </div>`;
+}
+
+async function sendApproveEmail(user, opts = {}) {
   const pkg = user.package || 'course';
   await deliverMail({
     fromName: 'FLOW TOOLS Course',
@@ -236,6 +249,9 @@ async function sendApproveEmail(user) {
     const pkgLabel   = PACKAGES[pkg]?.label || pkg;
     const finalPrice = user.finalPrice || PACKAGES[pkg]?.price || 999;
     const discount   = user.discountCode ? ` (โค้ด: ${user.discountCode} ลด ฿${DISCOUNT_CODES[user.discountCode] || 0})` : '';
+    const approvedBadge = opts.autoApproved
+      ? `<tr><td style="padding:8px 0;color:#7A9498;">สถานะ</td><td style="padding:8px 0;"><span style="background:#DCFCE7;color:#15803D;font-weight:700;font-size:13px;padding:4px 12px;border-radius:999px;">✅ อนุมัติอัตโนมัติแล้ว (Auto Approve เปิด)</span></td></tr>`
+      : `<tr><td style="padding:8px 0;color:#7A9498;">สถานะ</td><td style="padding:8px 0;"><span style="background:#E0F2FE;color:#0369A1;font-weight:700;font-size:13px;padding:4px 12px;border-radius:999px;">✔️ คุณอนุมัติเอง</span></td></tr>`;
     deliverMail({
       fromName: 'FLOW TOOLS Alert',
       to: adminEmail,
@@ -248,8 +264,10 @@ async function sendApproveEmail(user) {
       <tr><td style="padding:8px 0;color:#7A9498;">อีเมล</td><td style="padding:8px 0;color:#0E2A30;">${user.email}</td></tr>
       <tr><td style="padding:8px 0;color:#7A9498;">แพ็กเกจ</td><td style="padding:8px 0;color:#0E2A30;">${pkgLabel}</td></tr>
       <tr><td style="padding:8px 0;color:#7A9498;">ยอดชำระ</td><td style="padding:8px 0;font-weight:900;font-size:20px;color:#FF7A1A;">฿${finalPrice.toLocaleString()}${discount}</td></tr>
+      ${approvedBadge}
       <tr><td style="padding:8px 0;color:#7A9498;">เวลา</td><td style="padding:8px 0;color:#0E2A30;">${new Date().toLocaleString('th-TH')}</td></tr>
     </table>
+    ${slipBlockHtml(user)}
   </div>
 </div>`,
     }).catch(e => console.error('Admin notify error:', e.message));
@@ -275,8 +293,10 @@ async function sendPendingNotify(user) {
       <tr><td style="padding:8px 0;color:#7A9498;">อีเมล</td><td style="padding:8px 0;color:#0E2A30;">${user.email}</td></tr>
       <tr><td style="padding:8px 0;color:#7A9498;">แพ็กเกจ</td><td style="padding:8px 0;color:#0E2A30;">${pkgLabel}</td></tr>
       <tr><td style="padding:8px 0;color:#7A9498;">ยอดชำระ</td><td style="padding:8px 0;font-weight:900;font-size:20px;color:#FF7A1A;">฿${finalPrice.toLocaleString()}${discount}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">สถานะ</td><td style="padding:8px 0;"><span style="background:#FEF3C7;color:#B45309;font-weight:700;font-size:13px;padding:4px 12px;border-radius:999px;">⏳ รอคุณกด Approve (Auto Approve ปิด)</span></td></tr>
       <tr><td style="padding:8px 0;color:#7A9498;">เวลา</td><td style="padding:8px 0;color:#0E2A30;">${new Date().toLocaleString('th-TH')}</td></tr>
     </table>
+    ${slipBlockHtml(user)}
     <p style="margin:16px 0 0;font-size:14px;color:#7A9498;">กรุณาเข้าหลังบ้านเพื่ออนุมัติ: <a href="${BASE_URL}" style="color:#0FB5C5;">${BASE_URL}</a></p>
   </div>
 </div>`,
@@ -405,7 +425,7 @@ app.post('/api/submit-slip', requireAuth, upload.single('slip'), async (req, res
     user.approvedAt = new Date().toISOString();
     saveUsers(users);
     res.json({ success: true, user: sanitize(user) });
-    sendApproveEmail(user).catch(e => console.error('Email error:', e.message));
+    sendApproveEmail(user, { autoApproved: true }).catch(e => console.error('Email error:', e.message));
   } else {
     user.status = 'pending';
     saveUsers(users);
@@ -436,7 +456,7 @@ app.post('/api/admin/approve/:id', requireAdmin, async (req, res) => {
   if (!user) return res.status(404).json({ success: false });
   user.status = 'paid'; user.approvedAt = new Date().toISOString();
   saveUsers(users); res.json({ success: true });
-  sendApproveEmail(user).catch(e => console.error('Email error:', e.message));
+  sendApproveEmail(user, { autoApproved: false }).catch(e => console.error('Email error:', e.message));
 });
 
 app.post('/api/submit-upgrade', requireAuth, upload.single('slip'), async (req, res) => {
@@ -466,7 +486,7 @@ app.post('/api/submit-upgrade', requireAuth, upload.single('slip'), async (req, 
     user.slip         = req.file.filename;
     saveUsers(users);
     res.json({ success: true, autoApproved: true, user: sanitize(user) });
-    sendApproveEmail(user).catch(e => console.error('Upgrade email error:', e.message));
+    sendApproveEmail(user, { autoApproved: true }).catch(e => console.error('Upgrade email error:', e.message));
     return;
   }
 
@@ -510,11 +530,12 @@ app.post('/api/admin/approve-upgrade/:id', requireAdmin, async (req, res) => {
   user.package      = user.upgradeRequest.package;
   user.finalPrice   = user.upgradeRequest.price;  // ยอดที่จ่ายจริง = ส่วนต่างอัพเกรด
   user.discountCode = null;                        // อัพเกรดไม่มีโค้ดส่วนลด
+  user.slip         = user.upgradeRequest.slip || user.slip;  // เก็บสลิปไว้แสดงในเมล
   user.approvedAt   = new Date().toISOString();
   user.upgradeRequest = null;
   saveUsers(users);
   res.json({ success: true });
-  sendApproveEmail(user).catch(e => console.error('Email error:', e.message));
+  sendApproveEmail(user, { autoApproved: false }).catch(e => console.error('Email error:', e.message));
 });
 
 app.post('/api/admin/revoke/:id', requireAdmin, (req, res) => {
