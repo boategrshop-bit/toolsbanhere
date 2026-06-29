@@ -46,11 +46,13 @@ const UPLOADS_DIR    = path.join(__dirname, 'uploads');
 const USERS_FILE     = path.join(__dirname, 'users.json');
 const LESSONS_FILE   = path.join(__dirname, 'lessons.json');
 const SETTINGS_FILE  = path.join(__dirname, 'settings.json');
+const PAYMENTS_FILE  = path.join(__dirname, 'payments.json');
 
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(USERS_FILE))  fs.writeFileSync(USERS_FILE, '[]');
 if (!fs.existsSync(LESSONS_FILE)) fs.writeFileSync(LESSONS_FILE, '{}');
 if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ autoApprove: true }));
+if (!fs.existsSync(PAYMENTS_FILE)) fs.writeFileSync(PAYMENTS_FILE, '[]');
 
 function readUsers()     { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
 function saveUsers(u)    { fs.writeFileSync(USERS_FILE, JSON.stringify(u, null, 2)); }
@@ -58,6 +60,22 @@ function readLessons()   { try { return JSON.parse(fs.readFileSync(LESSONS_FILE,
 function saveLessons(l)  { fs.writeFileSync(LESSONS_FILE, JSON.stringify(l, null, 2)); }
 function readSettings()  { try { return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); } catch { return { autoApprove: true }; } }
 function saveSettings(s) { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(s, null, 2)); }
+function readPayments()  { try { return JSON.parse(fs.readFileSync(PAYMENTS_FILE, 'utf8')); } catch { return []; } }
+// บันทึกการจ่ายเงินทุกครั้ง (ออเดอร์ใหม่ + อัพเกรด) สำหรับสรุปยอด
+function recordPayment({ userId, name, email, amount, pkg, type }) {
+  try {
+    const list = readPayments();
+    list.push({
+      id: crypto.randomUUID(),
+      userId, name, email,
+      amount: Number(amount) || 0,
+      package: pkg,
+      type: type || 'order',   // 'order' | 'upgrade'
+      at: new Date().toISOString(),
+    });
+    fs.writeFileSync(PAYMENTS_FILE, JSON.stringify(list, null, 2));
+  } catch (e) { console.error('recordPayment error:', e.message); }
+}
 
 // ─── Password ────────────────────────────────────────────
 function hashPass(pw) {
@@ -424,6 +442,7 @@ app.post('/api/submit-slip', requireAuth, upload.single('slip'), async (req, res
     user.status     = 'paid';
     user.approvedAt = new Date().toISOString();
     saveUsers(users);
+    recordPayment({ userId: user.id, name: user.name, email: user.email, amount: user.finalPrice, pkg: user.package, type: 'order' });
     res.json({ success: true, user: sanitize(user) });
     sendApproveEmail(user, { autoApproved: true }).catch(e => console.error('Email error:', e.message));
   } else {
@@ -450,12 +469,20 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
   res.json(readUsers().filter(u => u.role !== 'admin').map(sanitize));
 });
 
+// สรุปยอดขาย — ส่ง payments ทั้งหมด ให้ฝั่งหน้าเว็บเลือกกรองเอง
+app.get('/api/admin/revenue', requireAdmin, (req, res) => {
+  const payments = readPayments().sort((a, b) => new Date(b.at) - new Date(a.at));
+  const total = payments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  res.json({ success: true, total, count: payments.length, payments });
+});
+
 app.post('/api/admin/approve/:id', requireAdmin, async (req, res) => {
   const users = readUsers();
   const user  = users.find(u => u.id === req.params.id);
   if (!user) return res.status(404).json({ success: false });
   user.status = 'paid'; user.approvedAt = new Date().toISOString();
   saveUsers(users); res.json({ success: true });
+  recordPayment({ userId: user.id, name: user.name, email: user.email, amount: user.finalPrice, pkg: user.package, type: 'order' });
   sendApproveEmail(user, { autoApproved: false }).catch(e => console.error('Email error:', e.message));
 });
 
@@ -485,6 +512,7 @@ app.post('/api/submit-upgrade', requireAuth, upload.single('slip'), async (req, 
     user.upgradeRequest = null;
     user.slip         = req.file.filename;
     saveUsers(users);
+    recordPayment({ userId: user.id, name: user.name, email: user.email, amount: upgradePrice, pkg: targetPkg, type: 'upgrade' });
     res.json({ success: true, autoApproved: true, user: sanitize(user) });
     sendApproveEmail(user, { autoApproved: true }).catch(e => console.error('Upgrade email error:', e.message));
     return;
@@ -531,9 +559,11 @@ app.post('/api/admin/approve-upgrade/:id', requireAdmin, async (req, res) => {
   user.finalPrice   = user.upgradeRequest.price;  // ยอดที่จ่ายจริง = ส่วนต่างอัพเกรด
   user.discountCode = null;                        // อัพเกรดไม่มีโค้ดส่วนลด
   user.slip         = user.upgradeRequest.slip || user.slip;  // เก็บสลิปไว้แสดงในเมล
+  const upgPrice    = user.upgradeRequest.price;
   user.approvedAt   = new Date().toISOString();
   user.upgradeRequest = null;
   saveUsers(users);
+  recordPayment({ userId: user.id, name: user.name, email: user.email, amount: upgPrice, pkg: user.package, type: 'upgrade' });
   res.json({ success: true });
   sendApproveEmail(user, { autoApproved: false }).catch(e => console.error('Email error:', e.message));
 });

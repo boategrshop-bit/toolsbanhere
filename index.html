@@ -470,6 +470,23 @@ a { text-decoration: none; }
       <h2 style="font-family:'Kanit'; font-weight:800; font-size:28px; margin:0 0 4px;">หลังบ้าน — จัดการผู้เรียน</h2>
       <p style="color:#5E787C; font-size:15px; margin:0 0 24px;">อนุมัติผู้ที่ชำระเงินแล้วเพื่อเปิดบทเรียน • ผู้ที่ยังไม่อนุมัติจะดูบทเรียนไม่ได้</p>
 
+      <!-- ยอดขาย -->
+      <div style="background:linear-gradient(135deg,#0E2A30,#155864); border-radius:20px; padding:28px 30px; margin-bottom:18px; color:#fff; position:relative; overflow:hidden;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px;">
+          <div>
+            <div id="rev-label" style="font-family:'Kanit'; font-weight:600; font-size:14px; color:#9CD2DA;">ยอดขายทั้งหมด</div>
+            <div id="rev-amount" style="font-family:'Kanit'; font-weight:900; font-size:48px; line-height:1.1; margin:6px 0 2px;">฿0</div>
+            <div id="rev-count" style="font-size:13px; color:#9CD2DA;">— รายการ</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <button onclick="setRevFilter('today')" id="rev-btn-today" style="font-family:'Kanit'; font-weight:600; font-size:13px; padding:8px 14px; border:none; border-radius:999px; background:rgba(255,255,255,0.15); color:#fff; cursor:pointer;">วันนี้</button>
+            <button onclick="setRevFilter('all')" id="rev-btn-all" style="font-family:'Kanit'; font-weight:600; font-size:13px; padding:8px 14px; border:none; border-radius:999px; background:#FF7A1A; color:#fff; cursor:pointer;">ทั้งหมด</button>
+            <input type="date" id="rev-date" onchange="setRevFilter('date')" style="font-family:'Kanit'; font-size:13px; padding:7px 10px; border:none; border-radius:10px; background:rgba(255,255,255,0.15); color:#fff; color-scheme:dark; cursor:pointer;">
+          </div>
+        </div>
+        <div id="rev-breakdown" style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.15); font-size:13px; color:#BFE3E8; display:none;"></div>
+      </div>
+
       <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px;">
         <div style="flex:1; min-width:140px; background:#fff; border:1px solid #E2F1F3; border-radius:14px; padding:18px;"><div id="stat-total" style="font-family:'Kanit'; font-weight:800; font-size:28px; color:#0E2A30;">0</div><div style="font-size:13px; color:#7A9498;">ผู้สมัครทั้งหมด</div></div>
         <div style="flex:1; min-width:140px; background:#fff; border:1px solid #E2F1F3; border-radius:14px; padding:18px;"><div id="stat-pending" style="font-family:'Kanit'; font-weight:800; font-size:28px; color:#F25C05;">0</div><div style="font-size:13px; color:#7A9498;">รอตรวจสอบ</div></div>
@@ -1141,6 +1158,7 @@ async function renderAdminScreen() {
       };
     }
 
+    loadRevenue();
     document.getElementById('stat-total').textContent   = users.length;
     document.getElementById('stat-pending').textContent = users.filter(u => u.status === 'pending').length;
     document.getElementById('stat-paid').textContent    = users.filter(u => u.status === 'paid').length;
@@ -1185,6 +1203,58 @@ async function renderAdminScreen() {
     document.getElementById('save-ok').style.display = 'none';
   } catch(e) {
     table.innerHTML = `<div style="padding:28px; color:#D24B00; font-size:14px; text-align:center;">โหลดข้อมูลไม่ได้: ${e.message}</div>`;
+  }
+}
+let _allPayments = [];
+let _revFilter = 'all';
+async function loadRevenue() {
+  try {
+    const data = await api('GET', '/api/admin/revenue');
+    _allPayments = data.success ? data.payments : [];
+  } catch(e) { _allPayments = []; }
+  renderRevenue();
+}
+function setRevFilter(f) { _revFilter = f; renderRevenue(); }
+function renderRevenue() {
+  const amountEl = document.getElementById('rev-amount');
+  const labelEl  = document.getElementById('rev-label');
+  const countEl  = document.getElementById('rev-count');
+  const bd       = document.getElementById('rev-breakdown');
+  if (!amountEl) return;
+  let list = _allPayments;
+  let label = 'ยอดขายทั้งหมด';
+  if (_revFilter === 'today') {
+    const t = new Date(); const key = t.toLocaleDateString('sv-SE'); // YYYY-MM-DD local
+    list = _allPayments.filter(p => new Date(p.at).toLocaleDateString('sv-SE') === key);
+    label = 'ยอดขายวันนี้';
+  } else if (_revFilter === 'date') {
+    const d = document.getElementById('rev-date').value;
+    if (d) {
+      list = _allPayments.filter(p => new Date(p.at).toLocaleDateString('sv-SE') === d);
+      const dt = new Date(d + 'T00:00:00');
+      label = 'ยอดขายวันที่ ' + dt.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' });
+    }
+  }
+  // ปุ่ม active
+  ['today','all'].forEach(k => {
+    const b = document.getElementById('rev-btn-'+k);
+    if (b) b.style.background = (_revFilter===k) ? '#FF7A1A' : 'rgba(255,255,255,0.15)';
+  });
+  const total = list.reduce((s,p) => s + (Number(p.amount)||0), 0);
+  amountEl.textContent = '฿' + total.toLocaleString();
+  labelEl.textContent  = label;
+  countEl.textContent  = list.length + ' รายการ';
+  // breakdown ออเดอร์ใหม่ vs อัพเกรด
+  const orders   = list.filter(p => p.type !== 'upgrade');
+  const upgrades = list.filter(p => p.type === 'upgrade');
+  const oSum = orders.reduce((s,p)=>s+(Number(p.amount)||0),0);
+  const uSum = upgrades.reduce((s,p)=>s+(Number(p.amount)||0),0);
+  if (list.length) {
+    bd.style.display = 'block';
+    bd.innerHTML = `🛒 ออเดอร์ใหม่ ${orders.length} รายการ — ฿${oSum.toLocaleString()} &nbsp;•&nbsp; ⬆️ อัพเกรด ${upgrades.length} รายการ — ฿${uSum.toLocaleString()}`;
+  } else {
+    bd.style.display = 'block';
+    bd.innerHTML = 'ยังไม่มียอดขายในช่วงนี้';
   }
 }
 async function testEmail() {
