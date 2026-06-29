@@ -116,26 +116,34 @@ async function deliverMail({ to, subject, html, fromName }) {
 
 function buildLessonRows(lessons) {
   const ids = Object.entries(lessons).sort(([a],[b]) => Number(a)-Number(b));
-  if (!ids.length) return '<p style="color:#666;text-align:center;padding:16px;">แอดมินจะอัพเดทลิงก์บทเรียนเร็วๆ นี้</p>';
+  if (!ids.length) return '<p style="color:#7A9498;text-align:center;padding:18px;font-size:14px;margin:0;">แอดมินจะอัพเดทลิงก์บทเรียนเร็วๆ นี้</p>';
   return ids.map(([num, driveId]) => {
     const title = LESSON_TITLES[Number(num)-1] || `บทที่ ${num}`;
     const url   = `https://drive.google.com/file/d/${driveId}/view`;
-    return `<tr>
-      <td style="padding:12px 16px;border-bottom:1px solid #E2F1F3;">
-        <span style="display:inline-block;width:28px;height:28px;border-radius:8px;background:#0FB5C5;color:#fff;font-weight:800;font-size:13px;text-align:center;line-height:28px;margin-right:10px;">${num}</span>
-        <strong style="color:#0E2A30;">${title}</strong>
-      </td>
-      <td style="padding:12px 16px;border-bottom:1px solid #E2F1F3;text-align:right;">
-        <a href="${url}" style="background:#FF7A1A;color:#fff;padding:7px 16px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;">เข้าเรียน →</a>
-      </td>
-    </tr>`;
+    return `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:10px;border-collapse:separate;">
+      <tr>
+        <td style="background:#FFFFFF;border:1px solid #E2F1F3;border-radius:14px;padding:14px 16px;">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td width="40" valign="middle" style="padding-right:12px;">
+                <div style="width:40px;height:40px;border-radius:11px;background:#0FB5C5;color:#fff;font-weight:800;font-size:16px;text-align:center;line-height:40px;font-family:Arial,sans-serif;">${num}</div>
+              </td>
+              <td valign="middle">
+                <div style="color:#0E2A30;font-weight:700;font-size:14px;line-height:1.4;">${title}</div>
+              </td>
+              <td width="118" valign="middle" align="right" style="padding-left:10px;">
+                <a href="${url}" style="display:inline-block;background:#FF7A1A;color:#fff;padding:9px 18px;border-radius:9px;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap;">▶ เข้าเรียน</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
   }).join('');
 }
 
-async function sendApproveEmail(user) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.log('⚠️  SMTP not set — skipping email for', user.email); return;
-  }
+function buildApproveEmailHtml(user) {
   const pkg         = user.package || 'course';
   const hasVideo    = pkg === 'course' || pkg === 'combo';
   const hasEbook    = pkg === 'ebook'  || pkg === 'combo';
@@ -145,41 +153,43 @@ async function sendApproveEmail(user) {
   const lessons     = readLessons();
 
   const masterSection = hasVideo && masterLink ? `
-    <div style="background:#EEF6FF;border:1px solid #BFDBFE;border-radius:14px;padding:20px 24px;margin-bottom:20px;">
-      <h3 style="font-family:'Kanit',sans-serif;font-weight:700;color:#1D4ED8;font-size:16px;margin:0 0 6px;">📁 ลิงก์บทเรียนรวม (หากดูในเว็บไม่ได้) + MASTER PROMPT</h3>
-      <p style="margin:0 0 14px;color:#1E40AF;font-size:14px;">โฟลเดอร์รวมทุกบทเรียนและ Master Prompt — ดาวน์โหลดหรือเปิดได้ตลอด</p>
-      <a href="${masterLink}" style="display:inline-block;background:#2563EB;color:#fff;padding:11px 24px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">เปิดโฟลเดอร์รวม →</a>
-    </div>` : '';
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 16px;">
+      <tr><td style="background:#EEF6FF;border:1px solid #DBEAFE;border-radius:16px;padding:22px 24px;">
+        <div style="font-weight:800;color:#1D4ED8;font-size:15px;margin:0 0 6px;">📁 โฟลเดอร์รวมทุกบทเรียน + MASTER PROMPT</div>
+        <div style="color:#3B5B8C;font-size:13px;line-height:1.6;margin:0 0 16px;">รวมทุกบทเรียนไว้ที่เดียว เผื่อดูในเว็บไม่ได้ พร้อม Master Prompt ดาวน์โหลดเก็บไว้ได้ตลอด</div>
+        <a href="${masterLink}" style="display:inline-block;background:#2563EB;color:#fff;padding:12px 26px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">เปิดโฟลเดอร์รวม →</a>
+      </td></tr>
+    </table>` : '';
 
   const videoSection = hasVideo ? `
-    <h3 style="font-family:'Kanit',sans-serif;font-weight:700;color:#0E2A30;font-size:17px;margin:0 0 12px;">🎬 บทเรียนวิดีโอของคุณ</h3>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E2F1F3;border-radius:14px;overflow:hidden;margin-bottom:20px;">
-      ${buildLessonRows(lessons)}
-    </table>
+    <div style="font-weight:800;color:#0E2A30;font-size:18px;margin:0 0 14px;">🎬 บทเรียนวิดีโอของคุณ</div>
+    ${buildLessonRows(lessons)}
+    <div style="height:8px;line-height:8px;">&nbsp;</div>
     ${masterSection}` : '';
 
   const ebookSection = hasEbook && ebookLink ? `
-    <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:14px;padding:20px 24px;margin-bottom:24px;">
-      <h3 style="font-family:'Kanit',sans-serif;font-weight:700;color:#C2410C;font-size:17px;margin:0 0 8px;">📖 E-Book ของคุณ</h3>
-      <p style="margin:0 0 14px;color:#92400E;font-size:15px;">คู่มือ Google Flow Tools ฉบับสมบูรณ์ — ดาวน์โหลดได้ทันที</p>
-      <a href="${ebookLink}" style="display:inline-block;background:#FF7A1A;color:#fff;padding:12px 28px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">ดาวน์โหลด E-Book →</a>
-    </div>` : '';
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 16px;">
+      <tr><td style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:16px;padding:22px 24px;">
+        <div style="font-weight:800;color:#C2410C;font-size:16px;margin:0 0 6px;">📖 E-Book คู่มือของคุณ</div>
+        <div style="color:#9A3412;font-size:13px;line-height:1.6;margin:0 0 16px;">คู่มือ Google Flow Tools ฉบับสมบูรณ์ ตั้งแต่พื้นฐานจนขายได้ — ดาวน์โหลดเก็บได้ทันที</div>
+        <a href="${ebookLink}" style="display:inline-block;background:#FF7A1A;color:#fff;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">ดาวน์โหลด E-Book →</a>
+      </td></tr>
+    </table>` : '';
 
   const lineSection = hasVideo && lineLink ? `
-    <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:14px;padding:20px 24px;text-align:center;margin-bottom:24px;">
-      <p style="margin:0 0 10px;font-weight:700;color:#15803D;font-size:15px;">📣 เข้าร่วมกลุ่ม LINE รับอัพเดทและถามตอบ</p>
-      <a href="${lineLink}" style="display:inline-block;background:#06C755;color:#fff;padding:12px 28px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;margin-top:4px;">เข้ากลุ่ม LINE →</a>
-    </div>` : '';
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 8px;">
+      <tr><td align="center" style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:16px;padding:24px;">
+        <div style="font-weight:800;color:#15803D;font-size:15px;margin:0 0 4px;">📣 เข้ากลุ่ม LINE</div>
+        <div style="color:#357A4C;font-size:13px;line-height:1.6;margin:0 0 16px;">รับอัพเดทเครื่องมือใหม่ ถาม–ตอบกับทีมงานและเพื่อนๆ ในคอร์ส</div>
+        <a href="${lineLink}" style="display:inline-block;background:#06C755;color:#fff;padding:12px 30px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">เข้ากลุ่ม LINE →</a>
+      </td></tr>
+    </table>` : '';
 
   const pkgLabel    = PACKAGES[pkg]?.label || 'คอร์ส';
   const finalPrice  = user.finalPrice || PACKAGES[pkg]?.price || 999;
   const discountCode = user.discountCode ? ` (โค้ด: ${user.discountCode})` : '';
 
-  await deliverMail({
-    fromName: 'FLOW TOOLS Course',
-    to: user.email,
-    subject: '✅ ยืนยันการชำระเงิน — รับของได้เลย!',
-    html: `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F2FBFC;font-family:'Sarabun',sans-serif;">
 <div style="max-width:600px;margin:32px auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 8px 32px rgba(14,42,48,0.08);">
@@ -207,7 +217,16 @@ async function sendApproveEmail(user) {
     </div>
   </div>
 </div>
-</body></html>`,
+</body></html>`;
+}
+
+async function sendApproveEmail(user) {
+  const pkg = user.package || 'course';
+  await deliverMail({
+    fromName: 'FLOW TOOLS Course',
+    to: user.email,
+    subject: '✅ ยืนยันการชำระเงิน — รับของได้เลย!',
+    html: buildApproveEmailHtml(user),
   });
   console.log(`📧 Email sent → ${user.email} [${pkg}]`);
 
@@ -511,6 +530,13 @@ app.delete('/api/admin/user/:id', requireAdmin, (req, res) => {
   users = users.filter(u => u.id !== req.params.id);
   saveUsers(users);
   res.json({ success: true });
+});
+
+// ─── พรีวิวหน้าตาเมล (ดูดีไซน์โดยไม่ต้องสั่งซื้อจริง) ─────
+app.get('/api/admin/email-preview', requireAdmin, (req, res) => {
+  const pkg = ['course', 'ebook', 'combo'].includes(req.query.pkg) ? req.query.pkg : 'combo';
+  const sample = { name: 'คุณตัวอย่าง', email: 'sample@example.com', package: pkg, finalPrice: PACKAGES[pkg].price, discountCode: null };
+  res.set('Content-Type', 'text/html; charset=utf-8').send(buildApproveEmailHtml(sample));
 });
 
 // ─── ทดสอบส่งเมล (วินิจฉัยปัญหา SMTP) ────────────────────
