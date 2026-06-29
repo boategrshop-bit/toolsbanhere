@@ -72,15 +72,47 @@ function checkPass(pw, stored) {
 function sanitize(u) { const { password, ...safe } = u; return safe; }
 
 // ─── Email ───────────────────────────────────────────────
+// Railway บล็อก outbound SMTP → ส่งเมลผ่าน Google Apps Script Web App (HTTPS/443)
+const APPSCRIPT_MAIL_URL = process.env.APPSCRIPT_MAIL_URL || '';
+const MAIL_SECRET = process.env.MAIL_SECRET || '';
+
+// SMTP fallback (ใช้ได้เฉพาะ host ที่ไม่บล็อก SMTP)
 const mailer = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
   secure: true,
   auth: { user: process.env.SMTP_USER, pass: (process.env.SMTP_PASS || '').replace(/\s+/g, '') },
-  connectionTimeout: 10000,  // fail เร็วถ้าต่อไม่ได้ ไม่ค้าง
+  connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 15000,
 });
+
+// ตัวส่งเมลกลาง: ถ้าตั้ง APPSCRIPT_MAIL_URL ไว้ → ใช้ Apps Script, ไม่งั้น fallback SMTP
+async function deliverMail({ to, subject, html, fromName }) {
+  if (APPSCRIPT_MAIL_URL) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    try {
+      const r = await fetch(APPSCRIPT_MAIL_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: MAIL_SECRET, to, subject, html, fromName: fromName || 'FLOW TOOLS' }),
+        signal: controller.signal,
+      });
+      const text = await r.text();
+      let data; try { data = JSON.parse(text); } catch { data = { ok: r.ok, raw: text }; }
+      if (!r.ok || data.ok === false || data.success === false) {
+        throw new Error(`Apps Script: ${data.error || data.message || text || r.status}`);
+      }
+      console.log(`📧 Email sent via Apps Script → ${to}`);
+      return data;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  // fallback: SMTP
+  return mailer.sendMail({ from: `"${fromName || 'FLOW TOOLS'}" <${process.env.SMTP_USER}>`, to, subject, html });
+}
 
 function buildLessonRows(lessons) {
   const ids = Object.entries(lessons).sort(([a],[b]) => Number(a)-Number(b));
@@ -143,8 +175,8 @@ async function sendApproveEmail(user) {
   const finalPrice  = user.finalPrice || PACKAGES[pkg]?.price || 999;
   const discountCode = user.discountCode ? ` (โค้ด: ${user.discountCode})` : '';
 
-  await mailer.sendMail({
-    from: `"FLOW TOOLS Course" <${process.env.SMTP_USER}>`,
+  await deliverMail({
+    fromName: 'FLOW TOOLS Course',
     to: user.email,
     subject: '✅ ยืนยันการชำระเงิน — รับของได้เลย!',
     html: `<!DOCTYPE html>
@@ -185,8 +217,8 @@ async function sendApproveEmail(user) {
     const pkgLabel   = PACKAGES[pkg]?.label || pkg;
     const finalPrice = user.finalPrice || PACKAGES[pkg]?.price || 999;
     const discount   = user.discountCode ? ` (โค้ด: ${user.discountCode} ลด ฿${DISCOUNT_CODES[user.discountCode] || 0})` : '';
-    mailer.sendMail({
-      from: `"FLOW TOOLS Alert" <${process.env.SMTP_USER}>`,
+    deliverMail({
+      fromName: 'FLOW TOOLS Alert',
       to: adminEmail,
       subject: `💰 มีออเดอร์ใหม่! ${user.name} — ฿${finalPrice.toLocaleString()}`,
       html: `<div style="font-family:sans-serif;max-width:480px;margin:20px auto;background:#fff;border:1px solid #E2F1F3;border-radius:16px;overflow:hidden;">
@@ -212,8 +244,8 @@ async function sendPendingNotify(user) {
   const pkgLabel = PACKAGES[pkg]?.label || pkg;
   const finalPrice = user.finalPrice || PACKAGES[pkg]?.price || 999;
   const discount = user.discountCode ? ` (โค้ด: ${user.discountCode})` : '';
-  await mailer.sendMail({
-    from: `"FLOW TOOLS Alert" <${process.env.SMTP_USER}>`,
+  await deliverMail({
+    fromName: 'FLOW TOOLS Alert',
     to: adminEmail,
     subject: `🧾 สลิปใหม่! ${user.name} — รอ Approve`,
     html: `<div style="font-family:sans-serif;max-width:480px;margin:20px auto;background:#fff;border:1px solid #E2F1F3;border-radius:16px;overflow:hidden;">
@@ -429,8 +461,8 @@ app.post('/api/submit-upgrade', requireAuth, upload.single('slip'), async (req, 
   // แจ้งแอดมิน
   const adminEmail = process.env.ADMIN_EMAIL;
   if (adminEmail) {
-    mailer.sendMail({
-      from: `"FLOW TOOLS Alert" <${process.env.SMTP_USER}>`,
+    deliverMail({
+      fromName: 'FLOW TOOLS Alert',
       to: adminEmail,
       subject: `⬆️ อัปเกรดใหม่! ${user.name} → ${PACKAGES[targetPkg].label}`,
       html: `<div style="font-family:sans-serif;max-width:480px;margin:20px auto;background:#fff;border:1px solid #E2F1F3;border-radius:16px;overflow:hidden;">
@@ -481,8 +513,8 @@ app.delete('/api/admin/user/:id', requireAdmin, (req, res) => {
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
   const to = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
   try {
-    await mailer.sendMail({
-      from: `"FLOW TOOLS Test" <${process.env.SMTP_USER}>`,
+    await deliverMail({
+      fromName: 'FLOW TOOLS Test',
       to,
       subject: '✅ ทดสอบระบบเมล — FLOW TOOLS',
       html: `<p>ถ้าคุณได้รับเมลนี้ แปลว่าระบบส่งเมลทำงานปกติแล้ว 🎉</p><p>เวลา: ${new Date().toLocaleString('th-TH')}</p>`,
@@ -534,15 +566,11 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.listen(PORT, () => {
   console.log(`\n🚀 Flow Tools Course: ${BASE_URL}`);
   console.log(`👤 เข้าระบบด้วย ADMIN_EMAIL (${process.env.ADMIN_EMAIL || 'ยังไม่ได้ตั้งค่า'})`);
-  // ตรวจสอบการตั้งค่า SMTP ตอนเริ่มระบบ
-  console.log(`📧 SMTP_USER: ${process.env.SMTP_USER ? 'OK ('+process.env.SMTP_USER+')' : '❌ ยังไม่ได้ตั้งค่า'}`);
-  console.log(`📧 SMTP_PASS: ${process.env.SMTP_PASS ? 'OK ('+process.env.SMTP_PASS.length+' chars)' : '❌ ยังไม่ได้ตั้งค่า'}`);
-  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-    mailer.verify((err) => {
-      if (err) console.error('❌ SMTP verify FAILED:', err.message);
-      else console.log('✅ SMTP พร้อมส่งเมลแล้ว\n');
-    });
+  // ตรวจสอบช่องทางส่งเมล
+  if (APPSCRIPT_MAIL_URL) {
+    console.log(`📧 ส่งเมลผ่าน Google Apps Script: OK`);
+    console.log(`📧 MAIL_SECRET: ${MAIL_SECRET ? 'OK' : '⚠️ ไม่ได้ตั้ง (แนะนำให้ตั้งเพื่อความปลอดภัย)'}\n`);
   } else {
-    console.error('⚠️  อีเมลจะไม่ถูกส่ง เพราะ SMTP_USER/SMTP_PASS ไม่ครบ — ตั้งค่าใน Railway Variables\n');
+    console.error('⚠️  ยังไม่ได้ตั้ง APPSCRIPT_MAIL_URL — จะ fallback ไป SMTP (ซึ่ง Railway บล็อก). ตั้งค่าใน Railway Variables\n');
   }
 });
