@@ -383,6 +383,67 @@ app.post('/api/admin/approve/:id', requireAdmin, async (req, res) => {
   sendApproveEmail(user).catch(e => console.error('Email error:', e.message));
 });
 
+app.post('/api/submit-upgrade', requireAuth, upload.single('slip'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'กรุณาแนบสลิป' });
+  const users = readUsers();
+  const user  = users.find(u => u.id === req.session.userId);
+  if (!user || user.status !== 'paid') return res.status(400).json({ success: false, message: 'ไม่พบข้อมูลผู้ใช้' });
+
+  const targetPkg = req.body.targetPackage;
+  if (!PACKAGES[targetPkg]) return res.status(400).json({ success: false, message: 'แพ็กเกจไม่ถูกต้อง' });
+
+  const UPGRADE_PRICES = {
+    'ebook->combo': 849, 'ebook->course': 649, 'course->combo': 200,
+  };
+  const upgradeKey = `${user.package}->${targetPkg}`;
+  const upgradePrice = UPGRADE_PRICES[upgradeKey];
+  if (!upgradePrice) return res.status(400).json({ success: false, message: 'ไม่สามารถอัปเกรดได้' });
+
+  user.upgradeRequest = {
+    package: targetPkg,
+    slip: req.file.filename,
+    price: upgradePrice,
+    createdAt: new Date().toISOString(),
+  };
+  saveUsers(users);
+  res.json({ success: true });
+
+  // แจ้งแอดมิน
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (adminEmail) {
+    mailer.sendMail({
+      from: `"FLOW TOOLS Alert" <${process.env.SMTP_USER}>`,
+      to: adminEmail,
+      subject: `⬆️ อัปเกรดใหม่! ${user.name} → ${PACKAGES[targetPkg].label}`,
+      html: `<div style="font-family:sans-serif;max-width:480px;margin:20px auto;background:#fff;border:1px solid #E2F1F3;border-radius:16px;overflow:hidden;">
+  <div style="background:#7C3AED;padding:18px 24px;color:#fff;font-size:18px;font-weight:700;">⬆️ คำขออัปเกรด — FLOW TOOLS</div>
+  <div style="padding:24px;">
+    <table style="width:100%;font-size:15px;border-collapse:collapse;">
+      <tr><td style="padding:8px 0;color:#7A9498;width:140px;">ชื่อ</td><td style="padding:8px 0;font-weight:700;">${user.name}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">อีเมล</td><td style="padding:8px 0;">${user.email}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">อัปเกรดจาก</td><td style="padding:8px 0;">${PACKAGES[user.package].label}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">อัปเกรดไป</td><td style="padding:8px 0;font-weight:700;color:#7C3AED;">${PACKAGES[targetPkg].label}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">ยอดที่จ่าย</td><td style="padding:8px 0;font-weight:900;font-size:20px;color:#FF7A1A;">฿${upgradePrice.toLocaleString()}</td></tr>
+    </table>
+    <p style="margin:16px 0 0;font-size:14px;color:#7A9498;">กรุณาเข้าหลังบ้านเพื่ออนุมัติ: <a href="${BASE_URL}">${BASE_URL}</a></p>
+  </div>
+</div>`,
+    }).catch(e => console.error('Upgrade notify error:', e.message));
+  }
+});
+
+app.post('/api/admin/approve-upgrade/:id', requireAdmin, async (req, res) => {
+  const users = readUsers();
+  const user  = users.find(u => u.id === req.params.id);
+  if (!user || !user.upgradeRequest) return res.status(404).json({ success: false });
+  user.package      = user.upgradeRequest.package;
+  user.approvedAt   = new Date().toISOString();
+  user.upgradeRequest = null;
+  saveUsers(users);
+  res.json({ success: true });
+  sendApproveEmail(user).catch(e => console.error('Email error:', e.message));
+});
+
 app.post('/api/admin/revoke/:id', requireAdmin, (req, res) => {
   const users = readUsers();
   const user  = users.find(u => u.id === req.params.id);
