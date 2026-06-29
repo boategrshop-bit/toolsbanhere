@@ -426,6 +426,10 @@ a { text-decoration: none; }
   </div><!-- /screen-lessons -->
 
   <!-- ===== ADMIN ===== -->
+  <div id="screen-adminLogin" class="screen" style="display:none;">
+    <div id="adminLogin"></div>
+  </div>
+
   <div id="screen-admin" class="screen">
     <div style="max-width:1000px; margin:0 auto; padding:36px 20px 70px;">
       <h2 style="font-family:'Kanit'; font-weight:800; font-size:28px; margin:0 0 4px;">หลังบ้าน — จัดการผู้เรียน</h2>
@@ -583,9 +587,30 @@ function goLessons() {
 function goPayment() { renderPaymentScreen(); showScreen('payment'); updateNav(); }
 function goAdmin() {
   if (currentUserDoc && currentUserDoc.role === 'admin') { renderAdminScreen(); showScreen('admin'); updateNav(); return; }
-  state.authMode = 'login';
-  renderAuthScreen('กรุณาเข้าสู่ระบบด้วยบัญชีแอดมิน');
-  showScreen('auth'); updateNav();
+  renderAdminLoginScreen(); showScreen('adminLogin'); updateNav();
+}
+function renderAdminLoginScreen() {
+  document.getElementById('adminLogin').innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f0f1a;">
+      <div style="background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:40px;width:340px;text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">🔐</div>
+        <h2 style="color:#fff;margin-bottom:24px;">Admin Panel</h2>
+        <input id="adminPwInput" type="password" placeholder="รหัสผ่าน Admin" style="width:100%;padding:12px;border-radius:8px;border:1px solid #444;background:#111;color:#fff;font-size:1rem;margin-bottom:16px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')submitAdminLogin()">
+        <button onclick="submitAdminLogin()" style="width:100%;padding:12px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;font-weight:600;">เข้าสู่ระบบ</button>
+        <div id="adminLoginErr" style="color:#f87171;margin-top:12px;font-size:0.9rem;"></div>
+      </div>
+    </div>`;
+}
+async function submitAdminLogin() {
+  const pw = document.getElementById('adminPwInput').value;
+  const r = await fetch('/api/admin-login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw }) });
+  const d = await r.json();
+  if (d.success) {
+    currentUserDoc = { role: 'admin', name: 'Admin', email: '', masterAdmin: true };
+    renderAdminScreen(); showScreen('admin'); updateNav();
+  } else {
+    document.getElementById('adminLoginErr').textContent = d.message || 'รหัสผ่านไม่ถูกต้อง';
+  }
 }
 function routeAfterAuth() {
   if (!currentUserDoc) { goAuth('login'); return; }

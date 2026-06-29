@@ -221,6 +221,7 @@ function requireAuth(req, res, next) {
   res.status(401).json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' });
 }
 function requireAdmin(req, res, next) {
+  if (req.session.masterAdmin) return next(); // master admin login
   if (!req.session.userId) return res.status(401).json({ success: false });
   const u = readUsers().find(x => x.id === req.session.userId);
   if (u?.role === 'admin') return next();
@@ -253,6 +254,15 @@ app.post('/api/register', (req, res) => {
   res.json({ success: true, user: sanitize(user) });
 });
 
+app.post('/api/admin-login', (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.ADMIN_PASSWORD) {
+    req.session.masterAdmin = true;
+    return res.json({ success: true });
+  }
+  res.status(401).json({ success: false, message: 'รหัสผ่านไม่ถูกต้อง' });
+});
+
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -268,6 +278,7 @@ app.post('/api/login', (req, res) => {
 app.post('/api/logout', (req, res) => req.session.destroy(() => res.json({ success: true })));
 
 app.get('/api/me', (req, res) => {
+  if (req.session.masterAdmin) return res.json({ loggedIn: true, user: { role: 'admin', name: 'Admin', email: '', masterAdmin: true } });
   if (!req.session.userId) return res.json({ loggedIn: false });
   const user = readUsers().find(u => u.id === req.session.userId);
   if (!user) { req.session.destroy(() => {}); return res.json({ loggedIn: false }); }
