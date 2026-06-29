@@ -491,6 +491,16 @@ a { text-decoration: none; }
         </label>
       </div>
 
+      <!-- ทดสอบระบบเมล -->
+      <div style="background:#fff; border:1px solid #E2F1F3; border-radius:14px; padding:18px 20px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'Kanit'; font-weight:700; font-size:15px; color:#0E2A30;">ทดสอบระบบเมล</div>
+          <div style="font-size:13px; color:#7A9498; margin-top:2px;">กดเพื่อส่งเมลทดสอบไปที่อีเมลแอดมิน — เช็คว่าระบบส่งเมลทำงาน</div>
+          <div id="test-email-result" style="font-size:13px; margin-top:8px; display:none;"></div>
+        </div>
+        <button id="test-email-btn" onclick="testEmail()" style="flex-shrink:0; font-family:'Kanit'; font-weight:700; font-size:14px; padding:11px 20px; border:none; border-radius:10px; background:#0FB5C5; color:#fff; cursor:pointer;">📧 ส่งเมลทดสอบ</button>
+      </div>
+
       <div id="admin-table" style="background:#fff; border:1px solid #E2F1F3; border-radius:16px; overflow:hidden;"></div>
 
       <!-- Admin lesson settings -->
@@ -1181,6 +1191,27 @@ async function renderAdminScreen() {
   } catch(e) {
     table.innerHTML = `<div style="padding:28px; color:#D24B00; font-size:14px; text-align:center;">โหลดข้อมูลไม่ได้: ${e.message}</div>`;
   }
+}
+async function testEmail() {
+  const btn = document.getElementById('test-email-btn');
+  const out = document.getElementById('test-email-result');
+  btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+  out.style.display = 'none';
+  try {
+    const data = await api('POST', '/api/admin/test-email');
+    out.style.display = 'block';
+    if (data.success) {
+      out.style.color = '#0A8D9B';
+      out.textContent = '✅ ' + data.message;
+    } else {
+      out.style.color = '#D24B00';
+      out.textContent = '❌ ส่งไม่สำเร็จ: ' + (data.message || 'ไม่ทราบสาเหตุ') + (data.code ? ' ['+data.code+']' : '');
+    }
+  } catch(e) {
+    out.style.display = 'block'; out.style.color = '#D24B00';
+    out.textContent = '❌ เชื่อมต่อ server ไม่ได้';
+  }
+  btn.disabled = false; btn.textContent = '📧 ส่งเมลทดสอบ';
 }
 async function approveUser(id) {
   await api('POST', `/api/admin/approve/${id}`);

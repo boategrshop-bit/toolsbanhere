@@ -73,8 +73,13 @@ function sanitize(u) { const { password, ...safe } = u; return safe; }
 
 // ─── Email ───────────────────────────────────────────────
 const mailer = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: { user: process.env.SMTP_USER, pass: (process.env.SMTP_PASS || '').replace(/\s+/g, '') },
+  connectionTimeout: 10000,  // fail เร็วถ้าต่อไม่ได้ ไม่ค้าง
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 function buildLessonRows(lessons) {
@@ -470,6 +475,23 @@ app.delete('/api/admin/user/:id', requireAdmin, (req, res) => {
   users = users.filter(u => u.id !== req.params.id);
   saveUsers(users);
   res.json({ success: true });
+});
+
+// ─── ทดสอบส่งเมล (วินิจฉัยปัญหา SMTP) ────────────────────
+app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
+  const to = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+  try {
+    await mailer.sendMail({
+      from: `"FLOW TOOLS Test" <${process.env.SMTP_USER}>`,
+      to,
+      subject: '✅ ทดสอบระบบเมล — FLOW TOOLS',
+      html: `<p>ถ้าคุณได้รับเมลนี้ แปลว่าระบบส่งเมลทำงานปกติแล้ว 🎉</p><p>เวลา: ${new Date().toLocaleString('th-TH')}</p>`,
+    });
+    res.json({ success: true, message: `ส่งเมลทดสอบไปที่ ${to} แล้ว — เช็คกล่องจดหมาย (รวม Spam)` });
+  } catch (e) {
+    console.error('❌ Test email error:', e.message);
+    res.json({ success: false, message: e.message, code: e.code });
+  }
 });
 
 app.post('/api/admin/reset-user/:id', requireAdmin, (req, res) => {
