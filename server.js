@@ -42,18 +42,22 @@ const LESSON_TITLES = [
 ];
 
 // ─── Paths & Data ────────────────────────────────────────
-const UPLOADS_DIR  = path.join(__dirname, 'uploads');
-const USERS_FILE   = path.join(__dirname, 'users.json');
-const LESSONS_FILE = path.join(__dirname, 'lessons.json');
+const UPLOADS_DIR    = path.join(__dirname, 'uploads');
+const USERS_FILE     = path.join(__dirname, 'users.json');
+const LESSONS_FILE   = path.join(__dirname, 'lessons.json');
+const SETTINGS_FILE  = path.join(__dirname, 'settings.json');
 
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(USERS_FILE))  fs.writeFileSync(USERS_FILE, '[]');
 if (!fs.existsSync(LESSONS_FILE)) fs.writeFileSync(LESSONS_FILE, '{}');
+if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ autoApprove: true }));
 
-function readUsers()    { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
-function saveUsers(u)   { fs.writeFileSync(USERS_FILE, JSON.stringify(u, null, 2)); }
-function readLessons()  { try { return JSON.parse(fs.readFileSync(LESSONS_FILE, 'utf8')); } catch { return {}; } }
-function saveLessons(l) { fs.writeFileSync(LESSONS_FILE, JSON.stringify(l, null, 2)); }
+function readUsers()     { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
+function saveUsers(u)    { fs.writeFileSync(USERS_FILE, JSON.stringify(u, null, 2)); }
+function readLessons()   { try { return JSON.parse(fs.readFileSync(LESSONS_FILE, 'utf8')); } catch { return {}; } }
+function saveLessons(l)  { fs.writeFileSync(LESSONS_FILE, JSON.stringify(l, null, 2)); }
+function readSettings()  { try { return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); } catch { return { autoApprove: true }; } }
+function saveSettings(s) { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(s, null, 2)); }
 
 // ─── Password ────────────────────────────────────────────
 function hashPass(pw) {
@@ -196,6 +200,33 @@ async function sendApproveEmail(user) {
   }
 }
 
+async function sendPendingNotify(user) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail || !process.env.SMTP_USER) return;
+  const pkg = user.package || 'course';
+  const pkgLabel = PACKAGES[pkg]?.label || pkg;
+  const finalPrice = user.finalPrice || PACKAGES[pkg]?.price || 999;
+  const discount = user.discountCode ? ` (โค้ด: ${user.discountCode})` : '';
+  await mailer.sendMail({
+    from: `"FLOW TOOLS Alert" <${process.env.SMTP_USER}>`,
+    to: adminEmail,
+    subject: `🧾 สลิปใหม่! ${user.name} — รอ Approve`,
+    html: `<div style="font-family:sans-serif;max-width:480px;margin:20px auto;background:#fff;border:1px solid #E2F1F3;border-radius:16px;overflow:hidden;">
+  <div style="background:#B45309;padding:18px 24px;color:#fff;font-size:18px;font-weight:700;">🧾 มีสลิปใหม่ รอ Approve — FLOW TOOLS</div>
+  <div style="padding:24px;">
+    <table style="width:100%;font-size:15px;border-collapse:collapse;">
+      <tr><td style="padding:8px 0;color:#7A9498;width:120px;">ชื่อ</td><td style="padding:8px 0;font-weight:700;color:#0E2A30;">${user.name}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">อีเมล</td><td style="padding:8px 0;color:#0E2A30;">${user.email}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">แพ็กเกจ</td><td style="padding:8px 0;color:#0E2A30;">${pkgLabel}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">ยอดชำระ</td><td style="padding:8px 0;font-weight:900;font-size:20px;color:#FF7A1A;">฿${finalPrice.toLocaleString()}${discount}</td></tr>
+      <tr><td style="padding:8px 0;color:#7A9498;">เวลา</td><td style="padding:8px 0;color:#0E2A30;">${new Date().toLocaleString('th-TH')}</td></tr>
+    </table>
+    <p style="margin:16px 0 0;font-size:14px;color:#7A9498;">กรุณาเข้าหลังบ้านเพื่ออนุมัติ: <a href="${BASE_URL}" style="color:#0FB5C5;">${BASE_URL}</a></p>
+  </div>
+</div>`,
+  }).catch(e => console.error('Pending notify error:', e.message));
+}
+
 // ─── Middleware ───────────────────────────────────────────
 app.use(session({
   secret: process.env.SESSION_SECRET || 'flow-tools-2025',
@@ -308,15 +339,23 @@ app.post('/api/submit-slip', requireAuth, upload.single('slip'), async (req, res
   const code        = (req.body.discountCode || '').toUpperCase().trim();
   const pkg         = req.body.package || user.package || 'course';
   user.slip         = req.file.filename;
-  user.status       = 'paid';
   user.package      = PACKAGES[pkg] ? pkg : (user.package || 'course');
   user.discountCode = DISCOUNT_CODES[code] ? code : null;
   user.finalPrice   = calcPrice(user.package, user.discountCode);
-  user.approvedAt   = new Date().toISOString();
-  saveUsers(users);
 
-  res.json({ success: true, user: sanitize(user) });
-  sendApproveEmail(user).catch(e => console.error('Email error:', e.message));
+  const settings = readSettings();
+  if (settings.autoApprove) {
+    user.status     = 'paid';
+    user.approvedAt = new Date().toISOString();
+    saveUsers(users);
+    res.json({ success: true, user: sanitize(user) });
+    sendApproveEmail(user).catch(e => console.error('Email error:', e.message));
+  } else {
+    user.status = 'pending';
+    saveUsers(users);
+    res.json({ success: true, user: sanitize(user) });
+    sendPendingNotify(user).catch(e => console.error('Notify error:', e.message));
+  }
 });
 
 // ─── Lessons (paid users only) ────────────────────────────
@@ -350,6 +389,24 @@ app.post('/api/admin/revoke/:id', requireAdmin, (req, res) => {
   if (!user) return res.status(404).json({ success: false });
   user.status = 'unpaid'; saveUsers(users);
   res.json({ success: true });
+});
+
+app.delete('/api/admin/user/:id', requireAdmin, (req, res) => {
+  let users = readUsers();
+  users = users.filter(u => u.id !== req.params.id);
+  saveUsers(users);
+  res.json({ success: true });
+});
+
+app.get('/api/admin/settings', requireAdmin, (req, res) => {
+  res.json({ success: true, settings: readSettings() });
+});
+
+app.post('/api/admin/settings', requireAdmin, (req, res) => {
+  const current = readSettings();
+  const updated = { ...current, ...req.body };
+  saveSettings(updated);
+  res.json({ success: true, settings: updated });
 });
 
 app.post('/api/admin/lessons', requireAdmin, (req, res) => {

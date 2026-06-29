@@ -25,6 +25,9 @@ body { font-family: 'Sarabun', sans-serif; color: #0E2A30; background: #F2FBFC; 
 button { font-family: inherit; }
 input  { font-family: inherit; color: inherit; }
 a { text-decoration: none; }
+#auto-approve-toggle:checked + span { background: #0FB5C5; }
+#auto-approve-toggle + span::before { content:''; position:absolute; height:20px; width:20px; left:4px; bottom:4px; background:#fff; border-radius:50%; transition:.3s; }
+#auto-approve-toggle:checked + span::before { transform: translateX(24px); }
 </style>
 </head>
 <body>
@@ -441,8 +444,20 @@ a { text-decoration: none; }
         <div style="flex:1; min-width:140px; background:#fff; border:1px solid #E2F1F3; border-radius:14px; padding:18px;"><div id="stat-paid" style="font-family:'Kanit'; font-weight:800; font-size:28px; color:#0A8D9B;">0</div><div style="font-size:13px; color:#7A9498;">อนุมัติแล้ว</div></div>
       </div>
 
+      <!-- Auto-approve toggle -->
+      <div style="background:#fff; border:1px solid #E2F1F3; border-radius:14px; padding:18px 20px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+        <div>
+          <div style="font-family:'Kanit'; font-weight:700; font-size:15px; color:#0E2A30;">Auto Approve</div>
+          <div style="font-size:13px; color:#7A9498; margin-top:2px;">เปิด = อนุมัติอัตโนมัติเมื่ออัพสลิป &nbsp;|&nbsp; ปิด = ส่งเมลแจ้งแอดมินรอ approve</div>
+        </div>
+        <label style="position:relative; display:inline-block; width:52px; height:28px; flex-shrink:0;">
+          <input type="checkbox" id="auto-approve-toggle" style="opacity:0; width:0; height:0;">
+          <span onclick="document.getElementById('auto-approve-toggle').click()" style="position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:28px; transition:.3s;"
+            id="auto-approve-slider"></span>
+        </label>
+      </div>
+
       <div id="admin-table" style="background:#fff; border:1px solid #E2F1F3; border-radius:16px; overflow:hidden;"></div>
-      <div style="margin-top:14px; font-size:13px; color:#8AA1A4;">บัญชีแอดมินสำหรับทดสอบ: <b>admin</b> / รหัส <b>admin123</b></div>
 
       <!-- Admin lesson settings -->
       <div style="margin-top:32px; background:#fff; border:1px solid #E2F1F3; border-radius:16px; padding:24px;">
@@ -845,10 +860,22 @@ async function renderAdminScreen() {
   const table = document.getElementById('admin-table');
   table.innerHTML = '<div style="padding:28px; text-align:center; color:#8AA1A4; font-size:15px;">กำลังโหลด...</div>';
   try {
-    const [users, lessonData] = await Promise.all([
+    const [users, lessonData, settingsData] = await Promise.all([
       api('GET', '/api/admin/users'),
       api('GET', '/api/admin/lessons'),
+      api('GET', '/api/admin/settings'),
     ]);
+
+    // auto-approve toggle
+    const autoApprove = settingsData.settings?.autoApprove ?? true;
+    const toggleEl = document.getElementById('auto-approve-toggle');
+    if (toggleEl) {
+      toggleEl.checked = autoApprove;
+      toggleEl.onchange = async () => {
+        await api('POST', '/api/admin/settings', { autoApprove: toggleEl.checked });
+      };
+    }
+
     document.getElementById('stat-total').textContent   = users.length;
     document.getElementById('stat-pending').textContent = users.filter(u => u.status === 'pending').length;
     document.getElementById('stat-paid').textContent    = users.filter(u => u.status === 'paid').length;
@@ -858,20 +885,22 @@ async function renderAdminScreen() {
       table.innerHTML = users.map((u, i) => {
         const sm = STATUS_MAP[u.status] || STATUS_MAP.unpaid;
         const isLast = i === users.length - 1;
-        const slipUrl = u.slip ? `/uploads/${u.slip}` : '';
-        const slipHtml = slipUrl
-          ? `<a href="${slipUrl}" target="_blank" style="flex-shrink:0;"><img src="${slipUrl}" alt="สลิป" style="width:42px; height:42px; object-fit:cover; border-radius:8px; border:1px solid #D6E9EB;"></a>`
-          : `<div style="width:42px; flex-shrink:0;"></div>`;
-        return `<div style="display:flex; align-items:center; gap:14px; padding:16px 20px; ${isLast ? '' : 'border-bottom:1px solid #EEF6F7;'}">
-          <div style="flex:1; min-width:0;">
+        const slipHtml = u.slip
+          ? `<a href="/uploads/${u.slip}" target="_blank" style="flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid #D6E9EB;border-radius:8px;font-size:12px;color:#0A8D9B;font-weight:600;text-decoration:none;background:#E6F8FA;">🧾 ดูสลิป</a>`
+          : `<span style="flex-shrink:0;font-size:12px;color:#ccc;">ไม่มีสลิป</span>`;
+        const pkgLabel = {'course':'คอร์ส','ebook':'E-Book','combo':'คอร์ส+E-Book'}[u.package] || u.package || '-';
+        return `<div style="display:flex; align-items:center; gap:10px; padding:14px 20px; flex-wrap:wrap; ${isLast ? '' : 'border-bottom:1px solid #EEF6F7;'}">
+          <div style="flex:1; min-width:150px;">
             <div style="font-family:'Kanit'; font-weight:700; font-size:15px;">${escHtml(u.name)}</div>
-            <div style="font-size:13px; color:#7A9498;">${escHtml(u.email)}</div>
+            <div style="font-size:12px; color:#7A9498;">${escHtml(u.email)}</div>
+            <div style="font-size:11px; color:#aaa; margin-top:2px;">${pkgLabel} ${u.finalPrice ? '฿'+u.finalPrice.toLocaleString() : ''}</div>
           </div>
           ${slipHtml}
           <div style="flex-shrink:0;"><span style="font-family:'Kanit'; font-weight:700; font-size:12px; padding:5px 12px; border-radius:999px; background:${sm.bg}; color:${sm.color};">${sm.label}</span></div>
-          <div style="flex-shrink:0; display:flex; gap:8px;">
-            <button onclick="approveUser('${escAttr(u.id)}')" style="font-family:'Kanit'; font-weight:600; font-size:13px; padding:7px 14px; border:none; border-radius:9px; background:#0FB5C5; color:#fff; cursor:pointer;">อนุมัติ + ส่งเมล</button>
-            <button onclick="revokeUser('${escAttr(u.id)}')"  style="font-family:'Kanit'; font-weight:600; font-size:13px; padding:7px 14px; border:1px solid #E0C0B0; border-radius:9px; background:#fff; color:#C2410C; cursor:pointer;">ยกเลิก</button>
+          <div style="flex-shrink:0; display:flex; gap:6px; flex-wrap:wrap;">
+            <button onclick="approveUser('${escAttr(u.id)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:none; border-radius:9px; background:#0FB5C5; color:#fff; cursor:pointer;">อนุมัติ + ส่งเมล</button>
+            <button onclick="revokeUser('${escAttr(u.id)}')"  style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:1px solid #E0C0B0; border-radius:9px; background:#fff; color:#C2410C; cursor:pointer;">ยกเลิก</button>
+            <button onclick="deleteUser('${escAttr(u.id)}','${escAttr(u.name)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:1px solid #fca5a5; border-radius:9px; background:#fff7f7; color:#dc2626; cursor:pointer;">ลบ</button>
           </div></div>`;
       }).join('');
     }
@@ -893,6 +922,11 @@ async function approveUser(id) {
 }
 async function revokeUser(id) {
   await api('POST', `/api/admin/revoke/${id}`);
+  renderAdminScreen();
+}
+async function deleteUser(id, name) {
+  if (!confirm(`ลบ "${name}" ออกจากระบบ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  await api('DELETE', `/api/admin/user/${id}`);
   renderAdminScreen();
 }
 async function saveLessonIds() {
