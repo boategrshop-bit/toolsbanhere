@@ -311,8 +311,8 @@ a { text-decoration: none; }
       <div id="pay-unpaid">
         <div style="text-align:center; margin-bottom:30px;">
           <div style="display:inline-flex; align-items:center; gap:8px; background:#FFF0E5; color:#F25C05; font-family:'Kanit'; font-weight:700; font-size:14px; padding:7px 16px; border-radius:999px; margin-bottom:14px;">ขั้นตอนสุดท้าย • เหลืออีกนิดเดียว</div>
-          <h2 style="font-family:'Kanit'; font-weight:800; font-size:30px; margin:0 0 6px;">ชำระเงิน ฿999 เพื่อเปิดบทเรียน</h2>
-          <p style="color:#5E787C; font-size:15px; margin:0;">สแกน QR หรือโอนเข้าบัญชี แล้วกดยืนยันการชำระเงินด้านล่าง</p>
+          <h2 id="pay-headline" style="font-family:'Kanit'; font-weight:800; font-size:30px; margin:0 0 6px;">ชำระเงิน ฿999 เพื่อเปิดบทเรียน</h2>
+          <p id="pay-subline" style="color:#5E787C; font-size:15px; margin:0;">สแกน QR หรือโอนเข้าบัญชี แล้วกดยืนยันการชำระเงินด้านล่าง</p>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:26px; align-items:start;">
           <div style="background:#fff; border:1px solid #E2F1F3; border-radius:20px; padding:14px; box-shadow:0 14px 40px rgba(14,42,48,0.07);">
@@ -652,7 +652,6 @@ const PKG_INFO = {
 };
 let _pendingPkg = 'course';
 function showPkgModal(pkg) {
-  if (currentUserDoc) { goAuth(pkg); return; }
   _pendingPkg = pkg;
   const info = PKG_INFO[pkg];
   const el = id => document.getElementById(id);
@@ -670,7 +669,18 @@ function showPkgModal(pkg) {
   modal.style.display = 'flex';
 }
 function closePkgModal() { document.getElementById('pkg-modal').style.display = 'none'; }
-function proceedFromModal() { closePkgModal(); goAuth(_pendingPkg); }
+function proceedFromModal() {
+  closePkgModal();
+  // ถ้าล็อกอินแล้ว → ตั้งโปรที่เลือกแล้วไปหน้าชำระเงินเลย ไม่ต้องผ่านหน้า auth
+  if (currentUserDoc) {
+    if (currentUserDoc.role === 'admin') { renderAdminScreen(); showScreen('admin'); updateNav(); return; }
+    if (currentUserDoc.status === 'paid') { routeAfterAuth(); return; }
+    if (PACKAGE_PRICES[_pendingPkg]) state.selectedPackage = _pendingPkg;
+    goPayment();
+    return;
+  }
+  goAuth(_pendingPkg);
+}
 function goAuth(pkgOrMode) {
   if (currentUserDoc) { routeAfterAuth(); return; }
   // ถ้าเป็น package name ให้เก็บไว้ ถ้าเป็น login/register ให้ใช้เป็น mode
@@ -829,6 +839,17 @@ function renderPaymentScreen() {
   if (di) di.value = '';
   if (dr) dr.style.display = 'none';
   updatePriceDisplay();
+  // หัวข้อหน้าชำระเงิน เปลี่ยนตามแพ็กเกจที่เลือก
+  const headEl = document.getElementById('pay-headline');
+  const subEl  = document.getElementById('pay-subline');
+  if (headEl) {
+    const pkgName = { course:'คอร์สวิดีโอ', ebook:'E-Book', combo:'คอร์ส + E-Book' }[state.selectedPackage] || 'คอร์ส';
+    const base    = PACKAGE_PRICES[state.selectedPackage] || 999;
+    headEl.textContent = `ชำระเงิน ฿${base.toLocaleString()} — ${pkgName}`;
+    if (subEl) subEl.textContent = state.selectedPackage === 'ebook'
+      ? 'สแกน QR หรือโอนเข้าบัญชี แล้วกดยืนยัน — รับ E-Book ทาง Email'
+      : 'สแกน QR หรือโอนเข้าบัญชี แล้วกดยืนยันการชำระเงินด้านล่าง';
+  }
   setPayError('');
   renderUpgradeSection();
 }
