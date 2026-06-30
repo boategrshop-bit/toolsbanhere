@@ -421,7 +421,7 @@ a { text-decoration: none; }
 
               <div id="pay-error" style="display:none; margin-top:10px; background:#FFF0E5; color:#D24B00; font-size:14px; padding:10px 14px; border-radius:10px;"></div>
             </div>
-            <button onclick="confirmPayment()" style="width:100%; font-family:'Kanit'; font-weight:800; font-size:18px; padding:17px; border:none; border-radius:13px; background:#FF7A1A; color:#fff; cursor:pointer; box-shadow:0 10px 26px rgba(255,122,26,0.4);">✓ แจ้งโอนแล้ว / ยืนยันการชำระเงิน</button>
+            <button id="pay-submit-btn" onclick="confirmPayment()" disabled style="width:100%; font-family:'Kanit'; font-weight:800; font-size:18px; padding:17px; border:none; border-radius:13px; background:#F4B58A; color:#fff; cursor:not-allowed; box-shadow:none; opacity:0.85;">📎 แนบสลิปก่อนเพื่อยืนยัน</button>
             <p style="font-size:13px; color:#8AA1A4; text-align:center; margin:12px 0 0; line-height:1.5;">อัพสลิปแล้วระบบส่ง E-Book / ลิงก์บทเรียนให้ทาง Email ทันที ไม่ต้องรอแอดมิน</p>
           </div>
         </div>
@@ -976,6 +976,7 @@ function renderPaymentScreen() {
   state.slipFile = null; state.slipDataUrl = null;
   state.discountCode = null; state.discountAmount = 0;
   document.getElementById('slip-preview-wrap').style.display = 'none';
+  setPaySubmitEnabled(false);
   const di = document.getElementById('discount-input');
   const dr = document.getElementById('discount-result');
   if (di) di.value = '';
@@ -1018,6 +1019,17 @@ async function applyDiscount() {
   }
   updatePriceDisplay();
 }
+// เปิด/ปิดปุ่มยืนยัน — ต้องแนบสลิปก่อนถึงจะกดได้
+function setPaySubmitEnabled(on) {
+  const btn = document.getElementById('pay-submit-btn');
+  if (!btn) return;
+  btn.disabled = !on;
+  btn.style.cursor     = on ? 'pointer' : 'not-allowed';
+  btn.style.background = on ? '#FF7A1A' : '#F4B58A';
+  btn.style.boxShadow  = on ? '0 10px 26px rgba(255,122,26,0.4)' : 'none';
+  btn.style.opacity    = on ? '1' : '0.85';
+  btn.textContent      = on ? '✓ แจ้งโอนแล้ว / ยืนยันการชำระเงิน' : '📎 แนบสลิปก่อนเพื่อยืนยัน';
+}
 function onSlipChange(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
@@ -1028,6 +1040,7 @@ function onSlipChange(e) {
     document.getElementById('slip-preview-img').src = reader.result;
     document.getElementById('slip-preview-wrap').style.display = 'flex';
     setPayError('');
+    setPaySubmitEnabled(true);
   };
   reader.readAsDataURL(file);
 }
