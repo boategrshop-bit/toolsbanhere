@@ -46,17 +46,31 @@ const LESSON_TITLES = [
 ];
 
 // ─── Paths & Data ────────────────────────────────────────
-const UPLOADS_DIR    = path.join(__dirname, 'uploads');
-const USERS_FILE     = path.join(__dirname, 'users.json');
-const LESSONS_FILE   = path.join(__dirname, 'lessons.json');
-const SETTINGS_FILE  = path.join(__dirname, 'settings.json');
-const PAYMENTS_FILE  = path.join(__dirname, 'payments.json');
+// เก็บข้อมูลที่เปลี่ยนแปลงตลอด (users/payments/uploads/settings/lessons) ไว้บน
+// Railway Persistent Volume เพื่อให้รอด redeploy/restart — ในเครื่อง dev จะ fallback
+// กลับมาใช้โฟลเดอร์แอปตามเดิม
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+if (DATA_DIR !== __dirname && !fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
+const UPLOADS_DIR    = path.join(DATA_DIR, 'uploads');
+const USERS_FILE     = path.join(DATA_DIR, 'users.json');
+const LESSONS_FILE   = path.join(DATA_DIR, 'lessons.json');
+const SETTINGS_FILE  = path.join(DATA_DIR, 'settings.json');
+const PAYMENTS_FILE  = path.join(DATA_DIR, 'payments.json');
+
+// boot แรกบน volume ใหม่: ถ้ายังไม่มีไฟล์ ให้ seed จากไฟล์ที่มากับ repo (ถ้ามี)
+// เพื่อรักษา config เดิม เช่น Drive ID บทเรียน / settings — ถ้าไม่มีค่อยใช้ค่าเริ่มต้น
+function seedDataFile(file, fallback) {
+  if (fs.existsSync(file)) return;
+  const bundled = path.join(__dirname, path.basename(file));
+  if (DATA_DIR !== __dirname && fs.existsSync(bundled)) fs.copyFileSync(bundled, file);
+  else fs.writeFileSync(file, fallback);
+}
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-if (!fs.existsSync(USERS_FILE))  fs.writeFileSync(USERS_FILE, '[]');
-if (!fs.existsSync(LESSONS_FILE)) fs.writeFileSync(LESSONS_FILE, '{}');
-if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ autoApprove: true }));
-if (!fs.existsSync(PAYMENTS_FILE)) fs.writeFileSync(PAYMENTS_FILE, '[]');
+seedDataFile(USERS_FILE, '[]');
+seedDataFile(LESSONS_FILE, '{}');
+seedDataFile(SETTINGS_FILE, JSON.stringify({ autoApprove: true }));
+seedDataFile(PAYMENTS_FILE, '[]');
 
 function readUsers()     { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
 function saveUsers(u)    { fs.writeFileSync(USERS_FILE, JSON.stringify(u, null, 2)); }
