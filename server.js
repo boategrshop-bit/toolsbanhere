@@ -2,7 +2,7 @@ require('dotenv').config();
 const express    = require('express');
 const session    = require('express-session');
 const multer     = require('multer');
-const nodemailer = require('nodemailer');
+// nodemailer removed — using Brevo API
 const crypto     = require('crypto');
 const fs         = require('fs');
 const path       = require('path');
@@ -107,47 +107,38 @@ function checkPass(pw, stored) {
 }
 function sanitize(u) { const { password, ...safe } = u; return safe; }
 
-// ─── Email ───────────────────────────────────────────────
-// Railway บล็อก outbound SMTP → ส่งเมลผ่าน Google Apps Script Web App (HTTPS/443)
-const APPSCRIPT_MAIL_URL = process.env.APPSCRIPT_MAIL_URL || '';
-const MAIL_SECRET = process.env.MAIL_SECRET || '';
+// ─── Email (Brevo transactional API) ─────────────────────
+const BREVO_API_KEY    = process.env.BREVO_API_KEY || '';
+const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || process.env.ADMIN_EMAIL || '';
+const BREVO_SENDER_NAME  = process.env.BREVO_SENDER_NAME  || 'FLOW TOOLS';
 
-// SMTP fallback (ใช้ได้เฉพาะ host ที่ไม่บล็อก SMTP)
-const mailer = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: { user: process.env.SMTP_USER, pass: (process.env.SMTP_PASS || '').replace(/\s+/g, '') },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});
-
-// ตัวส่งเมลกลาง: ถ้าตั้ง APPSCRIPT_MAIL_URL ไว้ → ใช้ Apps Script, ไม่งั้น fallback SMTP
 async function deliverMail({ to, subject, html, fromName }) {
-  if (APPSCRIPT_MAIL_URL) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
-    try {
-      const r = await fetch(APPSCRIPT_MAIL_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: MAIL_SECRET, to, subject, html, fromName: fromName || 'FLOW TOOLS' }),
-        signal: controller.signal,
-      });
-      const text = await r.text();
-      let data; try { data = JSON.parse(text); } catch { data = { ok: r.ok, raw: text }; }
-      if (!r.ok || data.ok === false || data.success === false) {
-        throw new Error(`Apps Script: ${data.error || data.message || text || r.status}`);
-      }
-      console.log(`📧 Email sent via Apps Script → ${to}`);
-      return data;
-    } finally {
-      clearTimeout(timer);
-    }
+  if (!BREVO_API_KEY) throw new Error('BREVO_API_KEY ยังไม่ได้ตั้งค่าใน Railway Variables');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'api-key': BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { name: fromName || BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+      signal: controller.signal,
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(`Brevo API: ${data.message || r.status}`);
+    console.log(`📧 Email sent via Brevo → ${to} (messageId: ${data.messageId})`);
+    return data;
+  } finally {
+    clearTimeout(timer);
   }
-  // fallback: SMTP
-  return mailer.sendMail({ from: `"${fromName || 'FLOW TOOLS'}" <${process.env.SMTP_USER}>`, to, subject, html });
 }
 
 function buildLessonRows(lessons) {
@@ -248,7 +239,7 @@ function buildApproveEmailHtml(user) {
     ${ebookSection}
     ${lineSection}
     <div style="border-top:1px solid #E2F1F3;padding-top:20px;color:#7A9498;font-size:13px;text-align:center;line-height:1.8;">
-      <p style="margin:0;">หากมีปัญหา ติดต่อ <a href="mailto:${process.env.SMTP_USER}" style="color:#0FB5C5;">${process.env.SMTP_USER}</a></p>
+      <p style="margin:0;">หากมีปัญหา ติดต่อ <a href="mailto:${BREVO_SENDER_EMAIL}" style="color:#0FB5C5;">${BREVO_SENDER_EMAIL}</a></p>
       <p style="margin:4px 0 0;">© 2025 FLOW TOOLS · พงศ์ปณต โกมลกนก</p>
     </div>
   </div>
@@ -687,11 +678,10 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.listen(PORT, () => {
   console.log(`\n🚀 Flow Tools Course: ${BASE_URL}`);
   console.log(`👤 เข้าระบบด้วย ADMIN_EMAIL (${process.env.ADMIN_EMAIL || 'ยังไม่ได้ตั้งค่า'})`);
-  // ตรวจสอบช่องทางส่งเมล
-  if (APPSCRIPT_MAIL_URL) {
-    console.log(`📧 ส่งเมลผ่าน Google Apps Script: OK`);
-    console.log(`📧 MAIL_SECRET: ${MAIL_SECRET ? 'OK' : '⚠️ ไม่ได้ตั้ง (แนะนำให้ตั้งเพื่อความปลอดภัย)'}\n`);
+  // ตรวจสอบ Brevo
+  if (BREVO_API_KEY) {
+    console.log(`📧 Brevo API: OK (sender: ${BREVO_SENDER_EMAIL})\n`);
   } else {
-    console.error('⚠️  ยังไม่ได้ตั้ง APPSCRIPT_MAIL_URL — จะ fallback ไป SMTP (ซึ่ง Railway บล็อก). ตั้งค่าใน Railway Variables\n');
+    console.error('⚠️  ยังไม่ได้ตั้ง BREVO_API_KEY — เมลจะส่งไม่ได้! ตั้งค่าใน Railway Variables\n');
   }
 });
