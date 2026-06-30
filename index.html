@@ -601,6 +601,19 @@ a { text-decoration: none; }
     </div>
   </div>
 
+  <!-- ===== UPGRADE MODAL (admin) ===== -->
+  <div id="upgrade-modal" onclick="if(event.target===this)closeUpgradeModal()" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(14,42,48,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:22px;padding:32px 28px;max-width:440px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,0.18);position:relative;">
+      <button onclick="closeUpgradeModal()" style="position:absolute;top:16px;right:18px;background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1;">×</button>
+      <div style="display:inline-block;font-family:'Kanit';font-weight:700;font-size:12px;padding:4px 12px;border-radius:999px;margin-bottom:12px;background:#F5F1FE;color:#7C3AED;">⬆️ อัพเกรดแพ็กเกจ</div>
+      <h3 style="font-family:'Kanit';font-weight:800;font-size:21px;color:#0E2A30;margin:0 0 4px;">อัพเกรดโปรให้ลูกค้า</h3>
+      <p id="upgrade-modal-sub" style="font-size:13px;color:#5E787C;margin:0 0 18px;"></p>
+      <div id="admin-upgrade-options" style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px;"></div>
+      <p style="font-size:12px;color:#8AA1A4;margin:0 0 18px;line-height:1.6;">กดยืนยันแล้วระบบจะเปลี่ยนแพ็กเกจให้ลูกค้าและ <b>ส่งเมลสินค้าชุดใหม่ให้ทันที</b></p>
+      <button id="upgrade-confirm" onclick="confirmUpgrade()" disabled style="width:100%;font-family:'Kanit';font-weight:800;font-size:16px;padding:15px;border:none;border-radius:13px;background:#7C3AED;color:#fff;cursor:pointer;opacity:0.5;">ยืนยันอัพเกรด + ส่งเมล</button>
+    </div>
+  </div>
+
   <!-- ===== FOOTER ===== -->
   <footer style="background:#0E2A30; color:#9CBABE; margin-top:auto;">
     <div style="max-width:1120px; margin:0 auto; padding:30px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
@@ -1246,6 +1259,7 @@ async function renderAdminScreen() {
           <div style="flex-shrink:0;"><span style="font-family:'Kanit'; font-weight:700; font-size:12px; padding:5px 12px; border-radius:999px; background:${sm.bg}; color:${sm.color};">${sm.label}</span></div>
           <div style="flex-shrink:0; display:flex; gap:6px; flex-wrap:wrap;">
             ${u.upgradeRequest ? `<button onclick="approveUpgrade('${escAttr(u.id)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:none; border-radius:9px; background:#7C3AED; color:#fff; cursor:pointer;">⬆️ อนุมัติ Upgrade</button>` : ''}
+            <button onclick="openUpgradeModal('${escAttr(u.id)}','${escAttr(u.name)}','${escAttr(u.package||'course')}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:1px solid #C9B8F0; border-radius:9px; background:#F5F1FE; color:#7C3AED; cursor:pointer;">⬆️ อัพเกรดโปร</button>
             <button onclick="approveUser('${escAttr(u.id)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:none; border-radius:9px; background:#0FB5C5; color:#fff; cursor:pointer;">อนุมัติ + ส่งเมล</button>
             <button onclick="revokeUser('${escAttr(u.id)}')"  style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:1px solid #E0C0B0; border-radius:9px; background:#fff; color:#C2410C; cursor:pointer;">ยกเลิก</button>
             <button onclick="resetUser('${escAttr(u.id)}','${escAttr(u.name)}')" style="font-family:'Kanit'; font-weight:600; font-size:12px; padding:6px 12px; border:1px solid #fbbf24; border-radius:9px; background:#fffbeb; color:#b45309; cursor:pointer;">รีเซต</button>
@@ -1349,6 +1363,58 @@ async function revokeUser(id) {
 async function approveUpgrade(id) {
   await api('POST', `/api/admin/approve-upgrade/${id}`);
   renderAdminScreen();
+}
+
+// ─── Admin: อัพเกรดโปรให้ลูกค้าโดยตรง ──────────────────────
+const PKG_LABEL_FULL  = { course:'คอร์สวิดีโอ 9 บทเรียน', ebook:'E-Book คู่มือ PDF', combo:'คอร์ส + E-Book (ครบเซต)' };
+const UPGRADE_PRICE_MAP = { 'ebook->combo':849, 'ebook->course':649, 'course->combo':200 };
+let _upgrade = { id:null, current:'', selected:null };
+function openUpgradeModal(id, name, current) {
+  _upgrade = { id, current, selected:null };
+  document.getElementById('upgrade-modal-sub').textContent =
+    `ลูกค้า: ${name} · แพ็กเกจปัจจุบัน: ${PKG_LABEL_FULL[current] || current}`;
+  renderUpgradeOptions();
+  const btn = document.getElementById('upgrade-confirm');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  document.getElementById('upgrade-modal').style.display = 'flex';
+}
+function renderUpgradeOptions() {
+  document.getElementById('admin-upgrade-options').innerHTML = ['course','ebook','combo'].map(k => {
+    const isCurrent = k === _upgrade.current;
+    const sel       = k === _upgrade.selected;
+    const diff      = UPGRADE_PRICE_MAP[`${_upgrade.current}->${k}`];
+    const right     = isCurrent ? 'ปัจจุบัน' : (diff != null ? `+฿${diff.toLocaleString()}` : 'ตั้งค่าตรง');
+    return `<button ${isCurrent ? 'disabled' : `onclick="selectUpgrade('${k}')"`} style="display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;font-family:'Kanit';font-weight:600;font-size:14px;padding:13px 15px;border:2px solid ${sel ? '#7C3AED' : '#E2F1F3'};border-radius:12px;background:${isCurrent ? '#F4F8F9' : (sel ? '#F5F1FE' : '#fff')};color:${isCurrent ? '#9AAFB2' : '#0E2A30'};cursor:${isCurrent ? 'not-allowed' : 'pointer'};">
+      <span>${PKG_LABEL_FULL[k]}</span>
+      <span style="font-weight:800;font-size:13px;color:${isCurrent ? '#9AAFB2' : '#7C3AED'};">${right}</span>
+    </button>`;
+  }).join('');
+}
+function selectUpgrade(k) {
+  _upgrade.selected = k;
+  renderUpgradeOptions();
+  const btn = document.getElementById('upgrade-confirm');
+  btn.disabled = false; btn.style.opacity = '1';
+}
+function closeUpgradeModal() { document.getElementById('upgrade-modal').style.display = 'none'; }
+async function confirmUpgrade() {
+  if (!_upgrade.selected) return;
+  const btn = document.getElementById('upgrade-confirm');
+  btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = 'กำลังส่ง...';
+  try {
+    const data = await api('POST', `/api/admin/upgrade/${_upgrade.id}`, { targetPackage: _upgrade.selected });
+    if (!data.success) {
+      alert('อัพเกรดไม่สำเร็จ: ' + (data.message || ''));
+      btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ยืนยันอัพเกรด + ส่งเมล';
+      return;
+    }
+    closeUpgradeModal();
+    btn.textContent = 'ยืนยันอัพเกรด + ส่งเมล';
+    renderAdminScreen();
+  } catch(e) {
+    alert('ผิดพลาด: ' + e.message);
+    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ยืนยันอัพเกรด + ส่งเมล';
+  }
 }
 async function resetUser(id, name) {
   if (!confirm(`รีเซต "${name}" กลับเป็นยังไม่ชำระ?\nลูกค้าจะต้องอัพสลิปใหม่`)) return;

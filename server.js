@@ -21,6 +21,10 @@ const DISCOUNT_CODES = {
   'STORYPRO': 100,
   'AFF':      300,
 };
+// ส่วนต่างราคาเมื่ออัพเกรดแพ็กเกจ (from->to)
+const UPGRADE_PRICES = {
+  'ebook->combo': 849, 'ebook->course': 649, 'course->combo': 200,
+};
 
 function calcPrice(pkg, code) {
   const base     = PACKAGES[pkg]?.price ?? 999;
@@ -495,9 +499,6 @@ app.post('/api/submit-upgrade', requireAuth, upload.single('slip'), async (req, 
   const targetPkg = req.body.targetPackage;
   if (!PACKAGES[targetPkg]) return res.status(400).json({ success: false, message: 'แพ็กเกจไม่ถูกต้อง' });
 
-  const UPGRADE_PRICES = {
-    'ebook->combo': 849, 'ebook->course': 649, 'course->combo': 200,
-  };
   const upgradeKey = `${user.package}->${targetPkg}`;
   const upgradePrice = UPGRADE_PRICES[upgradeKey];
   if (!upgradePrice) return res.status(400).json({ success: false, message: 'ไม่สามารถอัปเกรดได้' });
@@ -566,6 +567,31 @@ app.post('/api/admin/approve-upgrade/:id', requireAdmin, async (req, res) => {
   recordPayment({ userId: user.id, name: user.name, email: user.email, amount: upgPrice, pkg: user.package, type: 'upgrade' });
   res.json({ success: true });
   sendApproveEmail(user, { autoApproved: false }).catch(e => console.error('Email error:', e.message));
+});
+
+// ─── Admin: อัพเกรดแพ็กเกจให้ลูกค้าโดยตรง (เปลี่ยนโปร + ส่งเมลสินค้าใหม่ทันที) ──
+app.post('/api/admin/upgrade/:id', requireAdmin, async (req, res) => {
+  const users = readUsers();
+  const user  = users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้' });
+
+  const targetPkg = req.body.targetPackage;
+  if (!PACKAGES[targetPkg]) return res.status(400).json({ success: false, message: 'แพ็กเกจไม่ถูกต้อง' });
+  if (user.package === targetPkg && user.status === 'paid')
+    return res.status(400).json({ success: false, message: 'ลูกค้าอยู่แพ็กเกจนี้อยู่แล้ว' });
+
+  const upgradePrice = UPGRADE_PRICES[`${user.package}->${targetPkg}`] ?? null;
+
+  user.package        = targetPkg;
+  user.status         = 'paid';
+  user.approvedAt     = new Date().toISOString();
+  user.upgradeRequest = null;
+  if (upgradePrice != null) user.finalPrice = upgradePrice;  // ยอดที่จ่ายจริง = ส่วนต่างอัพเกรด
+  saveUsers(users);
+  res.json({ success: true, user: sanitize(user) });
+
+  if (upgradePrice) recordPayment({ userId: user.id, name: user.name, email: user.email, amount: upgradePrice, pkg: targetPkg, type: 'upgrade' });
+  sendApproveEmail(user, { autoApproved: false }).catch(e => console.error('Admin upgrade email error:', e.message));
 });
 
 app.post('/api/admin/revoke/:id', requireAdmin, (req, res) => {
