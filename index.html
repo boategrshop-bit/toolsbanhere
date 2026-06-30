@@ -268,8 +268,8 @@ a { text-decoration: none; }
               <div style="display:flex; gap:9px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800; flex-shrink:0;">✓</span><span style="font-size:14px; color:#33484C;">ดาวน์โหลด PDF ทาง Google Drive</span></div>
               <div style="display:flex; gap:9px; align-items:flex-start;"><span style="color:#0FB5C5; font-weight:800; flex-shrink:0;">✓</span><span style="font-size:14px; color:#33484C;">อ่านได้ทุกอุปกรณ์ ไม่มีวันหมดอายุ</span></div>
             </div>
-            <button onclick="showPkgModal('ebook')" style="width:100%; font-family:'Kanit'; font-weight:700; font-size:17px; padding:15px; border:2px solid #0FB5C5; border-radius:13px; background:#fff; color:#0A8D9B; cursor:pointer;">
-              สั่งซื้อ E-Book ฿350 →
+            <button disabled style="width:100%; font-family:'Kanit'; font-weight:700; font-size:16px; padding:15px; border:2px solid #E2F1F3; border-radius:13px; background:#F4F8F9; color:#9AAFB2; cursor:not-allowed;">
+              🔒 พร้อมจำหน่ายเร็วๆ นี้
             </button>
           </div>
         </div>
@@ -757,7 +757,7 @@ function proceedFromModal() {
   if (currentUserDoc) {
     if (currentUserDoc.role === 'admin') { renderAdminScreen(); showScreen('admin'); updateNav(); return; }
     if (currentUserDoc.status === 'paid') { routeAfterAuth(); return; }
-    if (PACKAGE_PRICES[_pendingPkg]) state.selectedPackage = _pendingPkg;
+    if (PACKAGE_PRICES[_pendingPkg] && !PAY_PKG_LIST.find(p => p.key === _pendingPkg)?.comingSoon) state.selectedPackage = _pendingPkg;
     goPayment();
     return;
   }
@@ -769,7 +769,7 @@ function goAuth(pkgOrMode) {
   if (pkgOrMode === 'login' || pkgOrMode === 'register') {
     state.authMode = pkgOrMode;
   } else {
-    if (pkgOrMode && PACKAGE_PRICES[pkgOrMode]) state.selectedPackage = pkgOrMode;
+    if (pkgOrMode && PACKAGE_PRICES[pkgOrMode] && !PAY_PKG_LIST.find(p => p.key === pkgOrMode)?.comingSoon) state.selectedPackage = pkgOrMode;
     state.authMode = 'register';
   }
   renderAuthScreen();
@@ -885,13 +885,21 @@ async function submitAuth() {
 // ─── Payment ──────────────────────────────────────────────
 const PAY_PKG_LIST = [
   { key:'course', label:'คอร์สวิดีโอ 9 บทเรียน',       price:999  },
-  { key:'ebook',  label:'E-Book คู่มือ PDF',            price:350  },
+  { key:'ebook',  label:'E-Book คู่มือ PDF',            price:350, comingSoon:true },
   { key:'combo',  label:'คอร์ส + E-Book (ขายดีที่สุด)', price:1199 },
 ];
 function renderPayPkgRadios() {
   const wrap = document.getElementById('pay-pkg-radios');
   if (!wrap) return;
   wrap.innerHTML = PAY_PKG_LIST.map(p => {
+    if (p.comingSoon) {
+      // แพ็กเกจที่ยังไม่เปิดขาย — กดไม่ได้
+      return `<label style="display:flex; align-items:center; gap:10px; cursor:not-allowed; border:2px solid #ECF2F3; background:#F6F9FA; border-radius:12px; padding:11px 14px; opacity:0.7;">
+        <span style="flex-shrink:0; width:18px; height:18px; border-radius:50%; border:2px solid #D4DEDF; background:#EEF3F4;"></span>
+        <span style="flex:1; font-family:'Kanit'; font-weight:600; font-size:14px; color:#9AAFB2;">${p.label}</span>
+        <span style="font-family:'Kanit'; font-weight:700; font-size:12px; color:#9AAFB2; background:#ECF2F3; padding:3px 9px; border-radius:999px;">เร็วๆ นี้</span>
+      </label>`;
+    }
     const on = state.selectedPackage === p.key;
     return `<label onclick="selectPayPkg('${p.key}')" style="display:flex; align-items:center; gap:10px; cursor:pointer; border:2px solid ${on?'#0FB5C5':'#E2F1F3'}; background:${on?'#F2FBFC':'#fff'}; border-radius:12px; padding:11px 14px;">
       <span style="flex-shrink:0; width:18px; height:18px; border-radius:50%; border:2px solid ${on?'#0FB5C5':'#C3D6D8'}; display:flex; align-items:center; justify-content:center;">${on?'<span style="width:9px;height:9px;border-radius:50%;background:#0FB5C5;"></span>':''}</span>
@@ -902,6 +910,7 @@ function renderPayPkgRadios() {
 }
 function selectPayPkg(key) {
   if (!PACKAGE_PRICES[key]) return;
+  if (PAY_PKG_LIST.find(p => p.key === key)?.comingSoon) return; // ยังไม่เปิดขาย
   state.selectedPackage = key;
   // เปลี่ยนโปรแล้วต้องเช็คโค้ดส่วนลดใหม่
   state.discountCode = null; state.discountAmount = 0;
