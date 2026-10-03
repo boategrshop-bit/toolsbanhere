@@ -303,7 +303,7 @@ async function sendApproveEmail(user, opts = {}) {
 
 async function sendPendingNotify(user) {
   const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail || !process.env.SMTP_USER) return;
+  if (!adminEmail || !BREVO_API_KEY) return;
   const pkg = user.package || 'course';
   const pkgLabel = PACKAGES[pkg]?.label || pkg;
   const finalPrice = user.finalPrice || PACKAGES[pkg]?.price || 999;
@@ -623,7 +623,7 @@ app.get('/api/admin/email-preview', requireAdmin, (req, res) => {
 
 // ─── ทดสอบส่งเมล (วินิจฉัยปัญหา SMTP) ────────────────────
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
-  const to = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+  const to = process.env.ADMIN_EMAIL || BREVO_SENDER_EMAIL;
   try {
     await deliverMail({
       fromName: 'FLOW TOOLS Test',
